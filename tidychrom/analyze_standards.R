@@ -14,9 +14,6 @@ samps <- unlist(lapply(cdfs, function(x){sub("^([^.]*).*", "\\1", basename(x))})
 file_stds   <- "Supel37_1_8.cdf"
 stds_index <- match(file_stds, lapply(cdfs, basename))
 
-# read data file names
-cdfs <- list.files(path = dir_data, pattern = ".cdf", full.names = T)
-
 # load raw MS data
 pd <- as(as.data.frame(samps), "AnnotatedDataFrame")
 raw_data <- readMSData(files = cdfs,
@@ -61,8 +58,9 @@ for (i in seq(length(rt_stds))){
   message(paste("(", i, "/", nrow(peaks_stds), ") matched peaks around ", rt_stds[i], " s", sep = "", collapse = ""))
 }
 
-## IDENTIFY STANDARDS ##
-
+## IDENTIFY STANDARDS FROM DATABASE ##
+# in principle, these identifications should be 1:1 and unique
+# as of 20200323, correct identification from spectra still requires some work
 peaks_matched <- annot_from_db(peaks_matched,
                                "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/db/supel37/")
 
@@ -76,10 +74,10 @@ peaks_master %>%
   # put the spectrum and spectrum_db columns into the same column
   gather() %>% select(value) %>%
   plot_spectra() +
-    ggtitle(paste("peak", as.character(peaknum), "\n",
-                  peaks_master %>%
-                    .[peaknum,] %>%
-                    select(id_db)))
+  ggtitle(paste("peak", as.character(peaknum), "\n",
+                peaks_master %>%
+                  .[peaknum,] %>%
+                  select(id_db)))
 
 ## DETERMINE LDRs ##
 
@@ -97,16 +95,23 @@ sname2dil <- c(
   Supel37_1_5k    = 1/5000
 )
 
+peaks_matched <- peaks_matched %>%
+  mutate(dil = sname2dil[samp], intb = unlist(intb))
+
+ldrs <- calc_ldrs(peaks_matched)
+
 # plot standard curves for each peak
 peaks_matched %>%
-  mutate(dil = sname2dil[samp], intb = unlist(intb)) %>%
+  #mutate(dil = sname2dil[samp], intb = unlist(intb)) %>%
   ggplot(aes(x = dil, y = intb)) +
-    facet_wrap(facets = vars(rt_std), nrow = 6, ncol = 7) +
-    geom_point() +
-    geom_smooth(method = "lm") +
-    stat_cor(size = 3, aes(label = ..rr.label..)) +
-    theme_pubr() +
-    scale_y_continuous(labels = function(x) format(x, scientific = TRUE)) +
-    ggtitle("peak area standard curves by RT (s)") +
-    xlab("dilution factor") +
-    ylab("baseline-adjusted area")
+  facet_wrap(facets = vars(rt_std), nrow = 6, ncol = 7) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  stat_cor(size = 3, aes(label = ..rr.label..)) +
+  theme_pubr() +
+  scale_y_continuous(labels = function(x) format(x, scientific = TRUE)) +
+  ggtitle("peak area standard curves by RT (s)") +
+  xlab("dilution factor") +
+  ylab("baseline-adjusted area")
+
+

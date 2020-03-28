@@ -2,4 +2,5 @@
 
 export(annot_from_db)
 export(auc)
+export(calc_intb_max)
 export(melt_coords)
