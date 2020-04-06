@@ -16,23 +16,32 @@
 
 bin_spectra <- function(chromdata, x = "mz", y = "intensity", scan = "scan", bin_width = 1){
 
+  # gotta get these right beforehand
+  # maybe could use some work 20200404
+  breaks <- seq(0.5, max(chromdata %>% pull(x)) + bin_width, bin_width)
+  labels <- lapply(seq(length(breaks) - 1), function(x){mean(breaks[[x]], breaks[[x+1]]) + 0.5})
+
   chromdata <- chromdata %>%
     # run the whole x-axis column thru cut()
     pull(x) %>%
     cut(
-      breaks = seq(0.5, max(.) + bin_width, bin_width),
-      labels = seq(1, max(.), bin_width)
+      breaks = breaks,
+      labels = labels
     ) %>%
+    # convert the "number factor" to actual numeric
+    # handy on why as.numeric() won't work
+    # https://stackoverflow.com/questions/3418128/how-to-convert-a-factor-to-integer-numeric-without-loss-of-information
+    as.numeric(levels(.))[.] %>%
     as_tibble() %>%
     # bind it back to the source data
     bind_cols(chromdata) %>%
     # drop the unbinned x-axis
     select(-one_of(x)) %>%
-    # and reassign the binned values
+    # reassign the binned values
     rename("value" = x) %>%
     # now, sum values in the same bin
     # the _ats enable pasting of passed column names
-    group_by_at(c(scan, x)) %>%
+    group_by_at(c(scan, "rt", x)) %>%
     summarise_at(
       .vars = y,
       .funs = sum
