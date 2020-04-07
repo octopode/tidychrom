@@ -23,6 +23,8 @@ index_master <- 10
 n_stds <- 35
 # width in sec of regions of interest (ROIs) used for matching standard peaks
 roi_width <- 4
+# minimum acceptable cosine similarity to consider two spectra matching
+cos_min <- 0.9
 
 # load raw data for the master
 chromdata_master <- mzxmls[index_master] %>%
@@ -114,7 +116,10 @@ for(file in mzxmls){
     cosine_by_roi_scan(spectra_master) %>%
     # get only the one best match for each ROI
     group_by(roi) %>%
-    filter(cos == max(cos)) %>%
+    filter(
+      cos > cos_min,
+      cos == max(cos)
+      ) %>%
     # and assign the master base peak as mz
     left_join(
       peaks_master %>%
@@ -144,6 +149,55 @@ for(file in mzxmls){
 }
 
 
+## DETERMINE LDRs ##
+
+# named list to assign dilutions based on file naming convention
+filename2dil <- c(
+  Supel37_1_1k_2_blanked.mzxml  = 1/1000,
+  Supel37_1_1k_blanked.mzxml    = 1/1000,
+  Supel37_1_200_2_blanked.mzxml = 1/200,
+  Supel37_1_200_blanked.mzxml   = 1/200,
+  Supel37_1_40_2_blanked.mzxml  = 1/40,
+  Supel37_1_40_blanked.mzxml    = 1/40,
+  Supel37_1_5k_2_blanked.mzxml  = 1/5000,
+  Supel37_1_5k_blanked.mzxml    = 1/5000,
+  Supel37_1_8_2_blanked.mzxml   = 1/8,
+  Supel37_1_8_blanked.mzxml     = 1/8
+)
+
+areas_all <- areas_all %>%
+  mutate(dil = filename2dil[file], intb = unlist(intb))
+
+ldrs <- calc_ldrs(peaks_matched)
+
+# plot standard curves for each ROI
+areas_all %>%
+  #mutate(dil = sname2dil[samp], intb = unlist(intb)) %>%
+  ggplot(aes(x = dil, y = intb)) +
+  facet_wrap(facets = vars(roi), nrow = 6, ncol = 7) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  stat_cor(size = 3, aes(label = ..rr.label..)) +
+  theme_pubr() +
+  scale_y_continuous(labels = function(x) format(x, scientific = TRUE)) +
+  ggtitle("peak area standard curves by ROI#") +
+  xlab("dilution factor") +
+  ylab("baseline-adjusted area")
+
+# get the most robust, but sub-saturated spectrum from each ROI
+
+# try to identify these standard spectra using a local EI-MS database
+ids_roi <- spectra_master %>%
+  group_by(roi) %>%
+  annot_from_db("/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/db/supel37/")
+
+# check the identifications yourself and make any needed corrections!
+
+# finally, save standard spectra to a new database of authentic standards
+
+## old stuff as of 20200406
+
+
 # match peaks by RT window and cosine score
 # instead of just RT, since integration will be done on base peak
 # using loop instead of lapply here to prevent overflow
@@ -160,7 +214,7 @@ for (i in seq(length(rt_stds))){
     method = "best",
     bin = T,
     rtime_tbl = rtime_tbl
-    ) %>%
+  ) %>%
     bind_rows(peaks_matched, .)
   message(paste("(", i, "/", nrow(peaks_stds), ") matched peaks around ", rt_stds[i], " s", sep = "", collapse = ""))
 }
@@ -170,11 +224,11 @@ for (i in seq(length(rt_stds))){
 master_coords.m %>%
   filter(samp %in% c("Supel37_1_8", "Supel37_1_8_2")) %>%
   ggplot() +
-    geom_line(aes(x = rt, y = intensity, color = samp)) +
-    geom_point(data = peaks_matched, aes(x = rt, y = intensity, color = samp), shape = 4) +
-    #geom_point(data = peaks_matched %>% select(rt_std) %>% unique(), aes(x = rt_std, y = rep(0, 37)), shape = 25) +
-    theme_pubr() +
-    theme(legend.position = "right")
+  geom_line(aes(x = rt, y = intensity, color = samp)) +
+  geom_point(data = peaks_matched, aes(x = rt, y = intensity, color = samp), shape = 4) +
+  #geom_point(data = peaks_matched %>% select(rt_std) %>% unique(), aes(x = rt_std, y = rep(0, 37)), shape = 25) +
+  theme_pubr() +
+  theme(legend.position = "right")
 
 ## IDENTIFY STANDARDS FROM DATABASE ##
 # in principle, these identifications should be 1:1 and unique
@@ -205,40 +259,4 @@ peaks_master %>%
                 peaks_master %>%
                   .[peaknum,] %>%
                   select(id_db)))
-
-## DETERMINE LDRs ##
-
-# named list to assign dilutions based on file naming convention
-sname2dil <- c(
-  Supel37_1_8     = 1/8,
-  Supel37_1_8_2   = 1/8,
-  Supel37_1_40    = 1/40,
-  Supel37_1_40_2  = 1/40,
-  Supel37_1_200   = 1/200,
-  Supel37_1_200_2 = 1/200,
-  Supel37_1_1k    = 1/1000,
-  Supel37_1_1k_2  = 1/1000,
-  Supel37_1_5k_2  = 1/5000,
-  Supel37_1_5k    = 1/5000
-)
-
-peaks_matched <- peaks_matched %>%
-  mutate(dil = sname2dil[samp], intb = unlist(intb))
-
-ldrs <- calc_ldrs(peaks_matched)
-
-# plot standard curves for each peak
-peaks_matched %>%
-  #mutate(dil = sname2dil[samp], intb = unlist(intb)) %>%
-  ggplot(aes(x = dil, y = intb)) +
-  facet_wrap(facets = vars(rt_std), nrow = 6, ncol = 7) +
-  geom_point() +
-  geom_smooth(method = "lm") +
-  stat_cor(size = 3, aes(label = ..rr.label..)) +
-  theme_pubr() +
-  scale_y_continuous(labels = function(x) format(x, scientific = TRUE)) +
-  ggtitle("peak area standard curves by RT (s)") +
-  xlab("dilution factor") +
-  ylab("baseline-adjusted area")
-
 
