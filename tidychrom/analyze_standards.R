@@ -11,9 +11,13 @@ library(RColorBrewer)
 
 # USER PARAMETERS
 # location of blanked data files
-dir_data    <- "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/cdf/20200212/stds"
-# search patter for blanked data files
+dir_data  <-  "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/cdf/20200212/stds"
+# search pattern for blanked data files
 mzxmls <- list.files(path = dir_data, pattern = "blanked.mzxml", full.names = T)
+# location of EI-MS database
+dir_db <-     "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/db/supel37/"
+# location of standard mix datasheet (as TSV)
+stds_coa <-   "/Users/jwinnikoff/Documents/MBARI/Lipids/CtenoLipids2020/tidychrom/example_data/Supel37_FAME_std.tsv"
 
 # resolution of the mass analyzer
 bin_width_mz <- 1
@@ -25,6 +29,8 @@ n_stds <- 35
 roi_width <- 4
 # minimum acceptable cosine similarity to consider two spectra matching
 cos_min <- 0.9
+# minimum acceptable R^2 value for calibration curves
+rsq_min <- 0.95
 
 # load raw data for the master
 chromdata_master <- mzxmls[index_master] %>%
@@ -80,8 +86,9 @@ for(file in mzxmls){
   # load a run
   message(paste("loading", basename(file)))
   chromdata <- file %>%
-    read_tidymass() %>%
-    bin_spectra(bin_width = bin_width_mz)
+    read_tidymass()# %>%
+    # not required for pre-binned data
+    #bin_spectra(bin_width = bin_width_mz)
   # filter to ROIs
   # multithreading this is a 2.5x speed boost
   chromdata_rois <- chromdata %>%
@@ -165,35 +172,154 @@ filename2dil <- c(
   Supel37_1_8_blanked.mzxml     = 1/8
 )
 
+# add standard dilution values to the area table
 areas_all <- areas_all %>%
   mutate(dil = filename2dil[file], intb = unlist(intb))
 
-ldrs <- calc_ldrs(peaks_matched)
-
-# plot standard curves for each ROI
+# plot standard curves with all data for each ROI
+# overlay R^2 on the plot
 areas_all %>%
-  #mutate(dil = sname2dil[samp], intb = unlist(intb)) %>%
+  # calculate and join R-squareds
+  left_join(
+    areas_all %>%
+      group_by(roi) %>%
+      summarize(rsq = r_squared(dil, intb, force_origin = T)),
+    by = "roi"
+  ) %>%
   ggplot(aes(x = dil, y = intb)) +
-  facet_wrap(facets = vars(roi), nrow = 6, ncol = 7) +
+  facet_wrap(facets = vars(roi), nrow = 5, ncol = 7) +
   geom_point() +
-  geom_smooth(method = "lm") +
-  stat_cor(size = 3, aes(label = ..rr.label..)) +
+  # note forcing thru origin
+  geom_smooth(method = "lm", formula = y~x+0) +
+  geom_text(size = 3, aes(x = 0.05, y = 1E7, label = round(rsq, 4))) +
   theme_pubr() +
   scale_y_continuous(labels = function(x) format(x, scientific = TRUE)) +
-  ggtitle("peak area standard curves by ROI#") +
+  ggtitle("peak area standard curves by ROI: all data") +
+  xlab("dilution factor") +
+  ylab("baseline-adjusted area")
+
+# calculate upper Limit of Linearity (LoL) for each ROI
+areas_all <- areas_all %>%
+  group_by(roi) %>%
+  # force origin because data are pre-blanked
+  summarise(intb_max = lol(dil, intb, rsq = rsq_min, force_origin = T)) %>%
+  # and join it back to the area table so we can filter
+  right_join(areas_all, by = "roi")
+
+# plot standard curves with in-range data for each ROI
+areas_all %>%
+  rowwise() %>%
+  # only data for which there _is_ a LoL and it's bigger than the area
+  # using a mutate() call keeps out-of-bounds observations as NAs,
+  # so the facet_grid will still be full and we can see which ROIs are not quantifiable
+  # but ggplot does throw warnings as a result!
+  mutate(intb = ifelse(!is.na(intb_max) && (intb <= intb_max), intb, NA)) %>%
+  # add in the R^2 values for valid curves
+  left_join(
+    areas_all %>%
+      filter(!is.na(intb_max) & (intb <= intb_max)) %>%
+      group_by(roi) %>%
+      summarize(rsq = r_squared(dil, intb, force_origin = T)),
+    by = "roi"
+  ) %>%
+  ggplot(aes(x = dil, y = intb)) +
+  facet_wrap(facets = vars(roi), nrow = 5, ncol = 7) +
+  geom_point() +
+  # note forcing thru origin
+  geom_smooth(method = "lm", formula=y~x+0) +
+  geom_text(size = 3, aes(x = 0.05, y = 1E7, label = round(rsq, 4))) +
+  theme_pubr() +
+  scale_y_continuous(labels = function(x) format(x, scientific = TRUE)) +
+  ggtitle(
+    paste(
+      "peak area standard curves by ROI: linear range only (rsq >= ",
+      rsq_min,
+      ")",
+      sep = "", collapse = ""
+    )
+  ) +
   xlab("dilution factor") +
   ylab("baseline-adjusted area")
 
 # get the most robust, but sub-saturated spectrum from each ROI
+# get those files and scan numbers
+scans_best <- areas_all %>%
+  group_by(roi) %>%
+  arrange(roi) %>%
+  # only scans within LDR, comment out if your standard curves suck
+  #filter(intb <= intb_max) %>%
+  # only the most robust of those
+  filter(intb == max(intb))
+
+# now read in the actual spectra
+# *opening only 1 file at a time*
+spectra_best <- pblapply(
+  unique(scans_best$file),
+  function(file_load){
+    spectra_best <- scans_best %>%
+      filter(file == file_load) %>%
+      # using inner join to keep roi, file metadata
+      inner_join(
+        # read from data file
+        file.path(dir_data, file) %>%
+          read_tidymass(),
+        by = "scan"
+      ) %>%
+      select(-rt.x, -mz.x, -intensity.x) %>%
+      rename(rt.y = "rt", mz.y = "mz", intensity.y = "intensity")
+  }) %>%
+  do.call(rbind, .) %>%
+  as_tibble()
 
 # try to identify these standard spectra using a local EI-MS database
-ids_roi <- spectra_master %>%
+# and append the id columns to the scans_best tibble
+scans_best <- spectra_best %>%
   group_by(roi) %>%
-  annot_from_db("/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/db/supel37/")
+  annot_from_db(dir_db, cores = detectCores()) %>%
+  rename(file = "file_db", cos = "cos_db") %>%
+  right_join(scans_best, by = "roi")
+
+# to undo the above step (remove DB mappings):
+#scans_best <- scans_best %>% select(-file_db, -cos_db)
 
 # check the identifications yourself and make any needed corrections!
+# in this case, I am using the first two database IDs to determine that C4:0 and C6:0 were not detected,
+# and thereby assigning ROIs to standards data loaded from this file:
+stds_data <- read_tsv(stds_coa) %>%
+  mutate(roi = ifelse(order_elute > 2, order_elute - 2, NA))
 
-# finally, save standard spectra to a new database of authentic standards
+scans_best <- scans_best %>%
+  left_join(stds_data, by = "roi")
+
+# finally, save measured standard spectra to the database of authentic standards
+pbmapply(
+  scans_best$scan,
+  scans_best$file,
+  scans_best$id,
+  FUN = function(scan_pull, file_pull, id){
+    file_out <- file.path(dir_db, paste(id, ".mzXML", sep = ""))
+    spectra_best %>%
+      filter((scan == scan_pull) & (file == file_pull)) %>%
+      write_tidymass(file = file_out)
+    return(file_out)
+  }
+)
+
+# this tries to get a bunch of stats in 1 lm() call
+#areas_all <- areas_all %>%
+#  group_by(roi) %>%
+#  # I think there is a tidier way to do this using enframe(), unnest() and maybe spread()
+#  # Also might be worth just wrapping the summarize() into a tbl -> tbl function
+#  summarise(
+#    # force origin because data are pre-blanked
+#    ldr = list(lol_fancy(dil, intb, rsq = rsq_min, force_origin = T)),
+#    intb_max = unlist(ldr)[["y_max"]],
+#    rsq = unlist(ldr)[["rr"]],
+#    n_dils = unlist(ldr)[["n_dils"]]
+#  ) %>%
+#  select(-ldr) %>%
+#  # and join it back to the area table so we can filter
+#  right_join(areas_all, by = "roi")
 
 ## old stuff as of 20200406
 
