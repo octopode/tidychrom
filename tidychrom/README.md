@@ -20,16 +20,13 @@ deconvolution, it expects
 	
 Analyze highly complex mixtures at your own risk, and maybe with a dash of special sauce.
 
-2. **tidy data storage and processing**
+2. **data you can see and touch**
 
 Existing R-based chromatography solutions rely on S3 and S4 objects with slots
 that are not really standardized. This package attempts to keep all analysis
 products in a single `tibble` and facilitate downstream analysis with `dplyr`.
 
 Visualization is implemented with `ggplot2`.
-
-Since S3 classes such as `Spectrum` and `gg*` cannot be stored in a tibble, a
-simple named list pointer system is used.
 
 ### project structure
 
