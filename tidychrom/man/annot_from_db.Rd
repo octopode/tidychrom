@@ -4,14 +4,14 @@
 \alias{annot_from_db}
 \title{Annotate from Database}
 \usage{
-annot_from_db(peaks_matched, dir_mgf, fname_regex)
+annot_from_db(spectra, dir_db, bin, fname_regex = "*.mzXML", cores = 1)
 }
 \arguments{
+\item{fname_regex}{Regex string that can be used to prefilter the TITLE= tags}
+
 \item{peaks_matched}{Tibble with column 'spectrum' containing MSnBase Spectrum objects encapsulated in lists}
 
 \item{dir_mgf}{Directory containing MS1 spectra (.mgf format, suffix) annotated using TITLE= tag}
-
-\item{fname_regex}{Regex string that can be used to prefilter the TITLE= tags}
 }
 \description{
 Simple iterative database search to annotate spectra in a tibble
