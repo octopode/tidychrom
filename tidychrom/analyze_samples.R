@@ -217,3 +217,17 @@ qc <- areas_all %>%
 areas_all_qc <- areas_all %>%
   filter(!(file %in% qc$file))
 
+# normalize peak areas to molar percentages
+# NTS: to make more rigorous, need to calculate molar.per.area using each session's standard
+areas_all_qc <- areas_all_qc %>%
+  left_join(
+    scans_best %>%
+      mutate(molar.per.area = conc_mol.per.L / intb) %>%
+      select(roi, id, molar.per.area),
+    by = "roi"
+  ) %>%
+  group_by(file) %>%
+  mutate(
+    molar = molar.per.area * intb,
+    molar.per.cent = 100 * molar / sum(molar)
+      )
