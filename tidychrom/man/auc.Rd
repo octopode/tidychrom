@@ -4,31 +4,26 @@
 \alias{auc}
 \title{Area Under the Curve (AUC)}
 \usage{
-auc(coords, rt_peak, plot_intb = T)
+auc(chromdata)
 }
 \arguments{
-\item{coords}{Tibble with columns \code{rt} and \code{intensity}}
-
-\item{rt_peak}{Retention time of the focal peak in units matching coords}
-
-\item{plot_intb}{Logical specifying whether to return ggplot objects}
+\item{chromdata}{Tibble with columns \code{rt} and \code{intensity}, pre-grouped by peak (e.g. by ROI.)}
 }
 \value{
-a named list of:
+A summary of the input tibble with additional columns:
 \code{rtmin}, \code{rtmax},
 \code{into} (integral overall),
-\code{into}, (integral overall),
 \code{intb}, (integral baseline-corrected),
-\code{gg}, a vector of gg objects depicting the integrated peak
 }
 \description{
-take molten chrom coords and an RT
-return info about the peak, including
-i.e. integrate a single peak
+Summarize grouped chromatographic data (windowed chromatograms),
+returning the RT window as well as overall and baseline-corrected integrals.
 }
 \examples{
 
-peaks_matched <- annot_from_db(peaks_matched, "~/msdb/", "methyl")
+areas_rois <- xics \%>\%
+ group_by(roi) \%>\%
+ auc()
 }
 \keyword{area}
 \keyword{curve}
