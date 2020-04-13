@@ -4,7 +4,7 @@
 \alias{cosine_by_roi_scan}
 \title{Compare Spectra by ROI and Scan}
 \usage{
-cosine_by_roi_scan(spectra_candidate, spectra_master)
+cosine_by_roi_scan(spectra_candidate, spectra_master, viz = F)
 }
 \arguments{
 \item{spectra_candidate}{Tibble containing full scans and an roi column. Can be multiple scans/ROI.}

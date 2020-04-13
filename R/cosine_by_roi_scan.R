@@ -9,7 +9,7 @@
 #' scan_cosines <- cosine_by_roi_scan(spectra_candidate, spectra_master)
 #'
 
-cosine_by_roi_scan <- function(spectra_candidate, spectra_master){
+cosine_by_roi_scan <- function(spectra_candidate, spectra_master, viz = F){
 
   # candidate ROI and scan combinations
   rois_scans <- spectra_candidate %>%
@@ -50,13 +50,4 @@ cosine_by_roi_scan <- function(spectra_candidate, spectra_master){
   #        filter(roi == roi)
   #    )
   #  )
-}
-
-# Helper function: take two (binned) spectra as tibbles
-# Join them and calculate the dot product.
-cosine_spectra <- function(spec_1, spec_2, x = "mz"){
-  specs <- inner_join(spec_1, spec_2, by = x)
-  # cosine similarity function used here is lifted from
-  # Fridolin Wild's LSA package (https://cran.r-project.org/web/packages/lsa/)
-  return(cosine(specs$intensity.x, specs$intensity.y)[[1]])
 }

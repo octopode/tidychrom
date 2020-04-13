@@ -15,11 +15,12 @@ dir_data  <-  "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/cdf/20200212/st
 # search pattern for blanked data files
 mzxmls <- list.files(path = dir_data, pattern = "blanked.mzxml", full.names = T)
 # location of EI-MS database
-dir_db <-     "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/db/supel37/"
+dir_db <-     "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/db/supel37/MoNA" # downloaded spectra
+#dir_db <-     "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/db/supel37/20200308_JRW" # my own library
 # location of standard mix datasheet (as TSV)
-file_coa <-   "/Users/jwinnikoff/Documents/MBARI/Lipids/CtenoLipids2020/tidychrom/example_data/Supel37_FAME_std.tsv"
+file_coa <-   "example_data/Supel37_FAME_std.tsv"
 # where to save ROI summary data
-file_scans_best <- "/Users/jwinnikoff/Documents/MBARI/Lipids/CtenoLipids2020/tidychrom/example_data/scans_best.save"
+file_scans_best <- file.path(dir_data, "scans_best.RData")
 
 # resolution of the mass analyzer
 bin_width_mz <- 1
@@ -255,7 +256,9 @@ scans_best <- areas_all %>%
 
 # now read in the actual spectra
 # *opening only 1 file at a time*
+clust <- NULL
 spectra_best <- pblapply(
+  cl = clust,
   unique(scans_best$file),
   function(file_load){
     spectra_best <- scans_best %>%
@@ -263,7 +266,8 @@ spectra_best <- pblapply(
       # using inner join to keep roi, file metadata
       inner_join(
         # read from data file
-        file.path(dir_data, file) %>%
+        #file.path(dir_data, file) %>%
+        file %>%
           read_tidymass(),
         by = "scan"
       ) %>%
@@ -295,8 +299,7 @@ scans_best <- scans_best %>%
 
 # these data can be saved for later sample analysis, in case the session is cleared
 # The important mapping in this dataframe (for QC) is roi:intb_max.
-scans_best %>%
-  save(file = file_scans_best)
+save(scans_best, file = file_scans_best)
 
 # finally, save measured standard spectra to the database of authentic standards
 pbmapply(
@@ -314,3 +317,37 @@ pbmapply(
 
 # Congrats, you determined the LoL for your standards and created a spectrum database!
 # Next, on to Step 3: Relative Quantitation of Samples (analyze_samples.R)
+
+# Generate back-to-back spectrum comparisons of standards vs. library.
+b2b <- pbmapply(
+  scans_best$roi,
+  scans_best$scan,
+  scans_best$file_db.y,
+  FUN = function(roi_pull, scan_pull, file_pull){
+    spectra_best %>%
+      filter((roi == roi_pull) & (scan == scan_pull)) %>%
+      bind_rows(
+        file.path(dir_db, file_pull) %>%
+          read_tidymass()
+          ) %>%
+      group_by(desc(scan)) %>%
+      plot_back2back()
+  }
+)
+
+# can I do this with dplyr?
+scans_best <- scans_best %>%
+  mutate(
+    b2b = spectra_best %>%
+      filter((roi == roi) & (scan == scan)) %>%
+      bind_rows(
+        file.path(dir_db, file_db.y) %>%
+          read_tidymass()
+      ) %>%
+      group_by(scan) %>%
+      plot_back2back() %>%
+      list()
+  )
+
+# to plot individual b2bs from this array:
+ggplot() + b2b[,4] # e.g. for ROI #4
