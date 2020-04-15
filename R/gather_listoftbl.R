@@ -1,6 +1,6 @@
 #' Gather List of Tibbles (or other dataframe-like type)
-#' Names and index of the list are saved to columns
 #'
+#' Names and index of the list are saved to specified columns.
 #' @param list_in A named list of tibbles or another dataframe-like type. Must all have matching columns.
 #' @param key Name for the tbl column that original list names will end up in.
 #' @param index Name for the tbl column that original list indices will end up in.
@@ -18,6 +18,8 @@
 gather_listoftbl <- function(list_in, key = "key", index = "index", cores = 1){
 
   # presently set up for a named list only
+  # NTS 20200415 JRW: There is probably a tidy way around this function,
+  # but at present several functions new and old depend on it. And it's fast.
   keys <- names(list_in)
 
   if(cores == 1){
