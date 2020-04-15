@@ -1,13 +1,20 @@
 #' Compare Spectra by ROI and Scan
 #'
 #' Take candidate spectra, return a summary of the best matches against a set of master spectra.
-#' @param spectra_candidate Tibble containing full scans and an roi column. Can be multiple scans/ROI.
+#' A prepackaged function to identify a known compound within an ROI in targeted analysis.
+#' @param spectra_candidate Tibble containing full scans and an \code{roi} column. Can be multiple scans/ROI.
 #' @param spectra_master Tibble containing standard spectra, also identified with an roi number. Should be only 1 scan/ROI.
-#' @keywords spectra cosine dot product
+#' @return a summary of \code{spectra_candidate} with only the best match for each ROI and additional column \code{cos}.
+#' @keywords cosine roi scan targeted
 #' @export
 #' @examples
 #' scan_cosines <- cosine_by_roi_scan(spectra_candidate, spectra_master)
 #'
+
+# NTS 20200413 JRW: Should be refactored to work on a pre-grouped (e.g. by ROI) tibble,
+# instead of having rois_scans$roi hardcoded
+# the tidy solution at the bottom can be reinstated with column renaming,
+# but the current version is nice because it can be parallelized.
 
 cosine_by_roi_scan <- function(spectra_candidate, spectra_master, viz = F){
 
