@@ -2,6 +2,10 @@
 
 A Dead Simple Toolkit for Quantitative Chromatography
 
+## workflows
+
+### targeted relative quantitation
+
 ## work-in-progress notes
 
 ### guiding design principles
