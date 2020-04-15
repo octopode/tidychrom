@@ -6,7 +6,7 @@
 #' @return A summary of the input tibble with additional columns:
 #' \code{rtmin}, \code{rtmax},
 #' \code{into} (integral overall),
-#' \code{intb}, (integral baseline-corrected),
+#' \code{intb} (integral baseline-corrected)
 #' @keywords area integral peak curve
 #' @export
 #' @examples
@@ -27,8 +27,6 @@ auc <- function(chromdata){
     # join back to scan metadata such as the mz/wl, cosine, peak rt and intensity, etc
     left_join(
       chromdata %>%
-        # (does nothing)
-        #group_by_at(dplyr::group_vars(chromdata)) %>%
         # condense to just the max-intensity scan in each group
         filter(intensity == max(intensity)),
       by = dplyr::group_vars(chromdata)
