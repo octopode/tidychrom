@@ -4,12 +4,22 @@
 \alias{plot_back2back}
 \title{Plot Spectra Back-to-Back}
 \usage{
-plot_back2back(ions, pal = c("blue", "red"), x = "mz", label_pctile = 5)
+plot_back2back(
+  ions,
+  pal = c("blue", "red"),
+  x = "mz",
+  label_pctile = 5,
+  alpha_unmatched = 0.8
+)
 }
 \arguments{
 \item{ions}{Grouped tibble containing mz and intensity.}
 
-\item{colors}{Character vector of colors to plot the spectra in}
+\item{label_pctile}{Upper percentile of peaks to label with m/z or wl.}
+
+\item{alpha_unmatched}{Alpha value to fade unmatched peaks.}
+
+\item{colors}{Character vector of colors in which to plot the spectra.}
 }
 \description{
 Take candidate spectra, return a summary of the best matches against a set of master spectra.

@@ -1,14 +1,32 @@
 Package: tidychrom
-Title: What the Package Does (One Line, Title Case)
+Title: A Dead Simple Toolkit for Quantitative Chromatography
 Version: 0.0.0.9000
 Authors@R: 
-    person(given = "First",
-           family = "Last",
+    person(given = "Jacob",
+           family = "Winnikoff",
            role = c("aut", "cre"),
-           email = "first.last@example.com",
+           email = "jwinnikoff@mbari.org",
            comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: What license it uses
+Description: Provides functions for compound identification and quantification from,
+    plus visual inspection of, raw chromatographic data. 
+    The only requirements for input data are:
+    [1] retention time (RT), 
+    [2] a spectral x-axis value (wavelength, m/z or similar), and 
+    [3] an intensity value (ion count, absorbance, emission, etc.) 
+    Functions are included for easy reading and writing of common MS1 file formats,
+    courtesy of mzR and the proteowizard backend.
+    Within tidychrom workflows, all data are stored and processed using the tidyverse
+    to maximize accessibility and extensibility. There are *no* custom classes.
+License: GPL-3
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.0.2
+Imports:
+    ggplot2,
+    ggpubr,
+    gridExtra,
+    mzR,
+    pbapply,
+    tidyverse
+    
+    
