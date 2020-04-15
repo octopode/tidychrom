@@ -14,9 +14,9 @@ though nothing explicitly prevents their use with this package.
 **Caveat:** since `tidychrom` does not implement RT adjustment nor spectrum
 deconvolution, it expects chromatographic data with 
 
-	1. good separation and 
+* good separation and 
 	
-	2. fairly consistent RTs (within a few sec) across samples.
+* fairly consistent RTs (within a few sec) across samples.
 
 Something like this:
 
