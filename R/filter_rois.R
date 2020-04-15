@@ -1,10 +1,10 @@
 #' Filter Chromatogram data to Regions of Interest (ROIs)
 #'
 #' @param chromdata A tibble of chromatography data
-#' @param peaks A tibble of peak RTs on which to center the ROIs. Should also contain an x-axis column (e.g. mz or wl.)
+#' @param peaks A tibble of peak RTs on which to center the ROIs. Should also contain an x-axis column (e.g. mz or wl)
 #' @param roi_width Width of ROIs to generate, in seconds
 #' @param x Name of the x-axis column, like "mz" or "wl"
-#' @param cores Number of cores to use for parallel ops on the input list. Only beneficial in huge tables (1E7s of rows.)
+#' @param cores Number of cores to use for parallel ops on the input list. Only beneficial in huge tables (1E7s of rows)
 #' @keywords roi region interest
 #' @export
 #' @examples
@@ -76,17 +76,6 @@ filter_rois2 <- function(chromdata, peaks, roi_width, x = "mz", cores = 1){
       ) %>%
       # filter out rows not belonging to a ROI
       filter(roi != 0)
-      #filter(any(mapply(
-      #  # feed ROI rts, mzs into filter in parallel
-      #  peaks_master$rt,
-      #  peaks_master$mz,
-      #  FUN = function(x, y){
-      #    # should be the fastest-eliminating check order
-      #    (x > rt - roi_width/2) &&
-      #      (x < rt + roi_width/2) &&
-      #      (y == mz)
-      #  }
-      #)))
   }else{
     # if parallel, use pbapply
     # I think this is a bad idea; it parallelizes over ROIs, not over chromdata.
