@@ -50,7 +50,7 @@ ggplot() + areas_all_qc %>%
     ) %>%
   pull(b2b)
 ```
-![spectrum matchup](img/20200414_JWL12_DHA_matchup%202.png)
+![spectrum matchup](img/20200414_JWL12_DHA_matchup%202.png  =250x)
 	
 + arranged alongside other stored plots,
 
@@ -59,7 +59,7 @@ ggplot() + areas_all_qc %>%
 b2b <- lapply(scans_best$b2b, function(x){ggplot() + x})
 do.call("grid.arrange", c(b2b, nrow = 5, ncol = 7))
 ```
-![ALL spectrum matchups](img/20200414_cosineMatches_1_40_newCoA%202.png)
+![ALL spectrum matchups](img/20200414_cosineMatches_1_40_newCoA%202.png  =250x)
 	
 + overlaid with other `gg` elements, like titles and other plots.
 
