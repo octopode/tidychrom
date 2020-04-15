@@ -15,23 +15,23 @@ dir_data  <-  "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/cdf/20200212/st
 # search pattern for blanked data files
 mzxmls <- list.files(path = dir_data, pattern = "blanked.mzxml", full.names = T)
 # location of EI-MS database
-dir_db <-     "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/db/supel37/MoNA" # downloaded spectra
-#dir_db <-     "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/db/supel37/20200308_JRW" # my own library
+#dir_db <-     "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/db/supel37/MoNA" # downloaded spectra
+dir_db <-     "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/db/supel37/20200414_JRW" # my own library
 # location of standard mix datasheet (as TSV)
-file_coa <-   "example_data/Supel37_FAME_std.tsv"
+file_coa <-   "example_data/Supel37_DB23.tsv"
 # where to save ROI summary data
 file_scans_best <- file.path(dir_data, "scans_best.RData")
 
 # resolution of the mass analyzer
 bin_width_mz <- 1
 # index in mzxmls of the "master run" used to identify ROIs for the standards
-index_master <- 10
+index_master <- 6
 # number of peaks to identify in the standard mix
 n_stds <- 35
 # width in sec of regions of interest (ROIs) used for matching standard peaks
 roi_width <- 4
 # minimum acceptable cosine similarity to consider two spectra matching
-cos_min <- 0.9
+cos_min <- 0.8
 # minimum acceptable R^2 value for calibration curves
 rsq_min <- 0.95
 
@@ -62,6 +62,7 @@ bpc_master %>%
   ggplot() +
     geom_line(aes(x = rt, y = intensity)) +
     geom_point(data = peaks_master, aes(x = rt, y = intensity), color = "red", shape = 25) +
+    geom_text(data = peaks_master, aes(x = rt, y = intensity, label = roi), size = 2, position = position_nudge(y = 1E5)) +
     theme_pubr() +
     theme(legend.position = "none") +
     ggtitle(paste("BPC:", basename(mzxmls[index_master])))
@@ -291,63 +292,76 @@ scans_best <- spectra_best %>%
 # check the identifications yourself and make any needed corrections!
 # in this case, I am using the first two database IDs to determine that C4:0 and C6:0 were not detected,
 # and thereby assigning ROIs to standards data loaded from this file:
-stds_data <- read_tsv(file_coa) %>%
-  mutate(roi = ifelse(order_elute > 2, order_elute - 2, NA))
+stds_data <- read_tsv(file_coa) #%>%
+  #mutate(roi = ifelse(order_elute > 2, order_elute - 2, NA))
 
 scans_best <- scans_best %>%
   left_join(stds_data, by = "roi")
 
 # these data can be saved for later sample analysis, in case the session is cleared
 # The important mapping in this dataframe (for QC) is roi:intb_max.
-save(scans_best, file = file_scans_best)
-
+#save(scans_best, file = file_scans_best)
+#
 # finally, save measured standard spectra to the database of authentic standards
-pbmapply(
-  scans_best$scan,
-  scans_best$file,
-  scans_best$id,
-  FUN = function(scan_pull, file_pull, id){
-    file_out <- file.path(dir_db, paste(id, ".mzXML", sep = ""))
-    spectra_best %>%
-      filter((scan == scan_pull) & (file == file_pull)) %>%
-      write_tidymass(file = file_out)
-    return(file_out)
-  }
-)
+#pbmapply(
+#  scans_best$scan,
+#  scans_best$file,
+#  scans_best$id,
+#  FUN = function(scan_pull, file_pull, id){
+#    file_out <- file.path(dir_db, paste(id, ".mzXML", sep = ""))
+#    spectra_best %>%
+#      filter((scan == scan_pull) & (file == file_pull)) %>%
+#      write_tidymass(file = file_out)
+#    return(file_out)
+#  }
+#)
 
 # Congrats, you determined the LoL for your standards and created a spectrum database!
 # Next, on to Step 3: Relative Quantitation of Samples (analyze_samples.R)
 
 # Generate back-to-back spectrum comparisons of standards vs. library.
-b2b <- pbmapply(
-  scans_best$roi,
-  scans_best$scan,
-  scans_best$file_db.y,
-  FUN = function(roi_pull, scan_pull, file_pull){
-    spectra_best %>%
-      filter((roi == roi_pull) & (scan == scan_pull)) %>%
-      bind_rows(
-        file.path(dir_db, file_pull) %>%
-          read_tidymass()
-          ) %>%
-      group_by(desc(scan)) %>%
-      plot_back2back()
-  }
-)
-
-# can I do this with dplyr?
 scans_best <- scans_best %>%
   mutate(
     b2b = spectra_best %>%
-      filter((roi == roi) & (scan == scan)) %>%
+      rename(
+        roi = "roi_pull",
+        scan = "scan_pull"
+      ) %>%
+      filter((roi_pull == roi) & (scan_pull == scan)) %>%
+      rename(
+        roi_pull = "roi",
+        scan_pull = "scan"
+      ) %>%
       bind_rows(
-        file.path(dir_db, file_db.y) %>%
+        file.path(dir_db, file_db) %>%
           read_tidymass()
       ) %>%
-      group_by(scan) %>%
+      # the loaded file always has scan=1,
+      # so this makes sure it's on the bottom
+      group_by(as.factor(-1*scan)) %>%
       plot_back2back() %>%
+      # overlay some explanatory elements
+      c(., list(
+        ggtitle(paste(
+          "ROI",
+          roi,
+          "\t\t\t\t",
+          file_db,
+          "\ncos =",
+          round(cos_db, 2),
+          "\t",
+          id
+          ))
+      )) %>%
       list()
   )
 
 # to plot individual b2bs from this array:
-ggplot() + b2b[,4] # e.g. for ROI #4
+#ggplot() + scans_best$b2b[4] # e.g. for ROI #4
+
+# to plot out a grid
+# extract and plotify
+b2b <- lapply(scans_best$b2b, function(x){ggplot() + x})
+pdf("20200414_cosineMatches_1_40_newCoA.pdf", width = 50, height = 25)
+do.call("grid.arrange", c(b2b, nrow = 5, ncol = 7))
+dev.off()
