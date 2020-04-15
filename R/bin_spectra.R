@@ -3,11 +3,12 @@
 #' Convenience function takes a list of m/z values and rounds them to the nearest integer
 #' with specified precision. Breaks on the 0.5.
 #' @param chromdata Tibble with columns identifying spectrum x-coord (e.g. mz or wl), y-coord (intensity, abs, etc.),
-#' and scan number.
-#' @param x Name of x-coordinate column.
-#' @param y Name of y-coordinate column.
-#' @param scan Name of scan ID column.
-#' @param bin_width Width of x bins.
+#' and scan number
+#' @param x Name of x-coordinate column
+#' @param y Name of y-coordinate column
+#' @param scan Name of scan ID column
+#' @param bin_width Width of x bins
+#' @return \code{chromdata} tibble with the x-axis binned as specified
 #' @keywords bin spectrum spectra mass wavelength
 #' @export
 #' @examples
