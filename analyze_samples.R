@@ -13,9 +13,9 @@
 file_stds   <- "Supel37_1_8_blanked.mzXML"
 # where to save matched peak area data
 # autosaves after reading every data file
-file_areas_all <- "/Users/jwinnikoff/Documents/MBARI/Lipids/CtenoLipids2020/tidychrom/example_data/areas_all.save"
+file_areas_all <- "example_data/areas_all.RData"
 # where ROI summary (ID, LoL) data is stored
-file_scans_best <- "/Users/jwinnikoff/Documents/MBARI/Lipids/CtenoLipids2020/tidychrom/example_data/scans_best.save"
+file_scans_best <- "example_data/scans_best.RData"
 
 # resolution of the mass analyzer
 bin_width_mz <- 1
@@ -24,7 +24,7 @@ n_stds <- 35
 # width in sec of regions of interest (ROIs) used for matching standard peaks
 roi_width <- 4
 # minimum acceptable cosine similarity to consider two spectra matching
-cos_min <- 0.9
+cos_min <- 0.5
 # minimum acceptable area of all matched peaks (lower limit QC)
 area_matched_min = 2E5
 
@@ -36,8 +36,6 @@ qc <- tibble(
   status = character(),
   reason = character(),
 )
-files_too_low <- NULL
-files_too_high <- NULL
 for(dir_data in c(
   # session subdirectories
   "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/cdf/20200213",
@@ -155,6 +153,7 @@ for(dir_data in c(
     # but only if there _are_ any matched peaks
     # console message is inside the function
     if(nrow(peaks_matched)){
+
       xics_matched <- peaks_matched %>%
         # parallelizing speeds it up
         extract_chromatograms(chromdata, cores = detectCores())
@@ -167,27 +166,94 @@ for(dir_data in c(
         # and append column identifying the file
         mutate(file = basename(file))
 
+      message("generating plots")
+      peak_areas <- peak_areas %>%
+        group_by(roi) %>%
+        mutate(
+          # plot the spectral matchups
+          b2b = chromdata %>%
+            # get sample spectrum
+            rename(
+              scan = "scan_pull"
+            ) %>%
+            filter(scan_pull == scan) %>%
+            rename(
+              scan_pull = "scan"
+            ) %>%
+            bind_rows(
+              # get standard spectrum
+              spectra_master %>%
+                rename(
+                  roi = "roi_pull"
+                ) %>%
+                filter(roi_pull == roi) %>%
+                rename(
+                  roi_pull = "roi"
+                ) %>%
+                # and isolate the scan
+                mutate(scan = 0)
+            ) %>%
+            # the loaded file always has scan=0,
+            # so this makes sure it's on the bottom
+            group_by(as.factor(-1*scan)) %>%
+            plot_back2back() %>%
+            # overlay some explanatory elements
+            c(., list(
+              ggtitle(paste(
+                "ROI ",
+                roi,
+                "\tcos = ",
+                round(cos, 2),
+                "\n",
+                basename(file),
+                sep = "", collapse = ""))
+            )) %>%
+            list(),
+          # plot the xics
+          xic = xics_matched %>%
+            # get the current ROI
+            rename(
+              roi = "roi_pull"
+            ) %>%
+            filter(roi_pull == roi) %>%
+            rename(
+              roi_pull = "roi"
+            ) %>%
+            plot_xic() %>%
+            # overlay some explanatory elements
+            c(., list(
+              ggtitle(paste(
+                "ROI ",
+                roi,
+                "\tcos = ",
+                round(cos, 2),
+                "\n",
+                basename(file),
+                sep = "", collapse = ""))
+            )) %>%
+            list()
+        )
+
       areas_all <- areas_all %>%
-        bind_rows(peak_areas)
+        bind_rows(peak_areas %>% ungroup())
 
       # save the areas dataframe as we go
-      areas_all %>%
-        save(file = file_areas_all)
+        save(areas_all, file = file_areas_all)
     }else{
       message(paste(basename(file), "matched no peaks to standard!"))
       qc <- qc %>%
-        add_case(c(
-          "file" = file,
+        add_case(
+          "file" = basename(file),
           "status" = "lo",
-          "reason" = "no matches to standard",
-          ))
+          "reason" = "no matches to standard"
+          )
     }
   } # end subdirectory
 } # end all subdirectories
 
 ## Post-analysis: QC and area normalization
 # get LoL data, if it's not already loaded
-load(file_scans_best)
+#load(file_scans_best)
 
 # Quality Control:
 # Lower limit - total matched peak area threshold:
@@ -209,7 +275,7 @@ qc <- areas_all %>%
   group_by(file) %>%
   summarise(
     status = "hi",
-    reason = paste("ROIs", paste(roi, sep=", "),"are saturated")
+    reason = paste("ROIs", paste(roi, sep="", collapse = ", "),"are saturated")
   ) %>%
   bind_rows(qc)
 
@@ -222,7 +288,7 @@ areas_all_qc <- areas_all %>%
 areas_all_qc <- areas_all_qc %>%
   left_join(
     scans_best %>%
-      mutate(molar.per.area = conc_mol.per.L / intb) %>%
+      mutate(molar.per.area = conc_molar * dil / intb) %>%
       select(roi, id, molar.per.area),
     by = "roi"
   ) %>%
@@ -233,3 +299,38 @@ areas_all_qc <- areas_all_qc %>%
     samp = filename2samp(file)
       )
 
+## Visualization:
+# Spectral matchups and integrated XICs for every single peak are stored
+# in areas_all and areas_all_qc. They can be accessed individually like so:
+ggplot() + areas_all_qc %>%
+  filter(
+    samp == "JWL0012" &
+      id == "C22:6"
+    ) %>%
+  pull(b2b)
+
+ggplot() + areas_all_qc %>%
+  filter(
+    samp == "JWL0012" &
+      id == "C22:6"
+  ) %>%
+  pull(xic)
+
+# series of xics can also be overlaid:
+# e.g. to show all the ROIs integrated in a given sample
+ggplot() + areas_all_qc %>%
+  filter(
+    samp == "JWL0138"
+  ) %>%
+  pull(xic) +
+  ggtitle("all ROIs: sample JWL0138")
+
+# or to show all the samples found in a given ROI
+ggplot() + areas_all_qc %>%
+  filter(
+    id == "C22:6"
+  ) %>%
+  pull(xic) +
+  ggtitle("C22:6 (DHA): 39 samples")
+# the stored plots are already titled, so the top-level
+# title should be overwritten with your own
