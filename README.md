@@ -2,7 +2,7 @@
 
 A Dead Simple Toolkit for Quantitative Chromatography
 
-![base peak chromatogram](https://github.com/octopode/tidychrom/blob/master/img/20200414_masterBPC%202.png)
+![base peak chromatogram](img/20200414_masterBPC%202.png)
 
 ## design principles
 
@@ -39,9 +39,27 @@ This repo contains a couple pre-cooked workflows (see **workflows** below), but 
 3. Visualization is implemented in `ggplot2`. Custom plotting functions return a list of `gg` objects,
 which can be
 
-+ stored in a tibble column and called retrieved later,
++ stored in a tibble column and _retrieved later_,
+
+(from [analyze_samples.R](analyze_samples.R))
+```
+ggplot() + areas_all_qc %>%
+  filter(
+    samp == "JWL0012" &
+      id == "C22:6"
+    ) %>%
+  pull(b2b)
+```
+![spectrum matchup](img/20200414_JWL12_DHA_matchup%202.png)
 	
 + arranged alongside other stored plots,
+
+(as in [analyze_standards.R](analyze_standards.R))
+```
+b2b <- lapply(scans_best$b2b, function(x){ggplot() + x})
+do.call("grid.arrange", c(b2b, nrow = 5, ncol = 7))
+```
+![ALL spectrum matchups](img/20200414_cosineMatches_1_40_newCoA%202.png)
 	
 + overlaid with other `gg` elements, like titles and other plots.
 
