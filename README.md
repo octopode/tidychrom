@@ -1,6 +1,6 @@
 # tidychrom
 
-A dead simple toolkit for quantitative chromatography
+A Dead Simple Toolkit for Quantitative Chromatography
 
 ## work-in-progress notes
 
@@ -32,11 +32,15 @@ Visualization is implemented with `ggplot2`.
 
 1. Functional programming style avoids custom objects.
 
-2. Functions are packaged 1 or 2 to a file:
+2. Functions are packaged 1 to a file.
+	
+3. Visualization:
 
-	1. The first function may operate on any combination of arguments, possibly 
-	including `.x` and `.y` for use in a `group_map()` call.
+All implemented in ggplot. Custom plotting functions return a list of `gg` objects,
+which can be:
 
-	2. The second function should take a `peaks` tibble as an argument, though
-	it may require particular columns to be present in that tibble, as documented. 
-	Absence of a required column will throw an `object not found` error.
+	+ stored in a tibble and called up later,
+	
+	+ arranged alongside other stored plots,
+	
+	+ overlaid with other `gg` elements, like titles and other plots
