@@ -6,6 +6,12 @@ A Dead Simple Toolkit for Quantitative Chromatography
 
 ### targeted relative quantitation
 
+<object data="https://github.com/octopode/tidychrom/blob/master/img/20200414_masterBPC.pdf" type="application/pdf" width="700px" height="700px">
+    <embed src="https://github.com/octopode/tidychrom/blob/master/img/20200414_masterBPC.pdf">
+        <p>This browser does not support PDFs. Please download the PDF to view it: <a href="https://github.com/octopode/tidychrom/blob/master/img/20200414_masterBPC.pdf">Download PDF</a>.</p>
+    </embed>
+</object>
+
 ## work-in-progress notes
 
 ### guiding design principles
