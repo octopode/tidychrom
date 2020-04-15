@@ -2,7 +2,7 @@
 
 A Dead Simple Toolkit for Quantitative Chromatography
 
-<flowchart>
+<flowchart/logo>
 
 ## design principles
 
@@ -16,9 +16,7 @@ deconvolution, it expects chromatographic data with
 
 * good separation and 
 	
-* fairly consistent RTs (within a few sec) across samples.
-
-Something like this:
+* fairly consistent RTs (within a few sec) across samples, like this:
 
 <img src="img/20200414_masterBPC%202.png" alt="base peak chromatogram" width="500px">
 
@@ -30,9 +28,7 @@ Analyze highly complex mixtures at your own risk, and maybe with a dash of speci
 
 Existing R-based chromatography solutions rely on S3/4 objects with slots
 that are not really standardized. This package attempts to keep all analysis
-products in tibbles and facilitate downstream analysis with `dplyr`.
-
-Visualization is implemented with `ggplot2`.
+products in tibbles and facilitate downstream analysis with `dplyr`. Visualization is implemented with `ggplot2`.
 
 ## project structure
 
