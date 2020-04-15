@@ -3,8 +3,8 @@
 #' @param peaks Tibble with columns \code{scan} and \code{mz}/\code{wl}, and other identifiers
 #' @param chromdata Full-spectrum chromatographic data
 #' @param x Name of x-axis variable (\code{mz} or \code{wl}, etc.)
-#' @return A tibble of XICs or single-wavelength chromatograms for the full peaks (ready for integration!)
-#' Peak ID columns like roi are preserved.
+#' @return A tibble of XICs or single-wavelength chromatograms for the full peaks
+#' centered on \code{scan} (ready for integration!) Peak ID columns like roi are preserved.
 #' @keywords extract chromatogram
 #' @export
 #' @examples
