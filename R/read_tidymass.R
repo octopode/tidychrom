@@ -1,11 +1,14 @@
 #' Read Tidy Mass Chromatogram from File
 #'
-#' @param file A tibble with columns scan or scan_num, mz, and intensity
+#' @param file Path to an mzR-compatible MS1 file
+#' @return A tibble with columns \code{scan}, \code{rt}, \code{mz}, and \code{intensity}
 #' @keywords write tibble mz
 #' @export
 #' @examples
-#' ions %>% tbl2exp(file = "mychrom.mzxml")
+#' ions <- read_tidymass(file = "mychrom.mzxml")
 #'
+# NTS 20200415 JRW: add MS level filtering
+
 read_tidymass <- function(file){
 
   mzr <- openMSfile(file)
