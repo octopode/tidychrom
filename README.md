@@ -8,12 +8,15 @@ A Dead Simple Toolkit for Quantitative Chromatography
 
 1. **ingredients you can pronounce**
 
-No fancy algorithms <cough> ordered bijective interpolated time warping </cough>, 
+No fancy algorithms `<cough>`ordered bijective interpolated time warping`</cough>`, 
 though nothing explicitly prevents their use with this package.
 
 **Caveat:** since `tidychrom` does not implement RT adjustment nor spectrum
-deconvolution, it expects chromatographic data with (1) good separation and 
-(2) fairly consistent RTs (within a few sec) across samples.
+deconvolution, it expects chromatographic data with 
+
+	1. good separation and 
+	
+	2. fairly consistent RTs (within a few sec) across samples.
 
 Something like this:
 
