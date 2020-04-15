@@ -51,7 +51,7 @@ ggplot() + areas_all_qc %>%
   pull(b2b)
 ```
 ![spectrum matchup](img/20200414_JWL12_DHA_matchup%202.png  =250x)
-<img src="url" alt="alt text" width="250px">
+<img src="img/20200414_JWL12_DHA_matchup%202.png" alt="spectrum matchup" width="250px">
 	
 + arranged alongside other stored plots,
 
