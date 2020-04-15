@@ -2,7 +2,7 @@
 
 A Dead Simple Toolkit for Quantitative Chromatography
 
-<flowchart/logo>
+<flowchart-logo>
 
 ## design principles
 
