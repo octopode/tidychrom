@@ -90,16 +90,28 @@ ggplot() + areas_all_qc %>%
 
 ## workflows
 
+### scanwise blanking
+
+Preprocessing scripts to subtract blank data (like solvent peaks and column bleed):
+
+[Scanwise blanking](subtract_blanks.R)
+
+[Scanwise blanking (multisession)](subtract_blanks_multidir.R)
+
 ### targeted relative quantitation
 
-This workflow was made to calculate the ratio (molar percentages) of fatty acid methyl esters (FAMEs) in a set of biological samples. It has 3 steps:
+This workflow was made to calculate the ratio (molar percentages) of fatty acid methyl esters (FAMEs) in a set of biological samples. It has 2 main steps:
 
-1. [Scanwise blanking](subtract_blanks_multidir.R)
+1. [Standard ID, saturation point determination, and spectrum extraction](analyze_standards.R)
 
-2. [Standard ID and saturation point determination](analyze_standards.R)
-
-3. [Sample ID and relative quantitation](analyze_samples.R)
+2. [Sample ID and relative quantitation](analyze_samples.R)
 
 Comments will walk you through each script.
 All user-provided parameters (including data directories) are provided at the top.
 Data files used in the scripts will be hosted at a later date.
+
+### untargeted relative quantitation (work in progress)
+
+1. ROI determination by peak frequency, saturation analysis, and spectrum extraction
+
+2. Sample ID (against above ROIs) and relative quantitation
