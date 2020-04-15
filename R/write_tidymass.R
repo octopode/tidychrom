@@ -6,6 +6,9 @@
 #' @examples
 #' ions %>% tbl2exp(file = "mychrom.mzxml")
 #'
+
+# NTS 20200415 JRW: It would be nice to fill in some accurate metadata here,
+# but first, can figure out what the pwiz backend does on its own.
 write_tidymass <- function(ions, file){
   #
   if("scan_num" %in% names(ions)){
