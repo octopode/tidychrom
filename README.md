@@ -2,7 +2,7 @@
 
 A Dead Simple Toolkit for Quantitative Chromatography
 
-![base peak chromatogram](img/20200414_masterBPC%202.png)
+<img src="img/20200414_masterBPC%202.png" alt="base peak chromatogram" width="500px">
 
 ## design principles
 
@@ -14,7 +14,7 @@ though nothing explicitly prevents their use with this package.
 **Caveat:** since `tidychrom` does not implement RT adjustment nor spectrum
 deconvolution, it expects
 
-* chromatographic data with good separation and 
+* chromatographic data with good separation (like the chromatogram above) and 
 	
 * fairly consistent RTs (within a few sec) across samples.
 	
@@ -50,8 +50,7 @@ ggplot() + areas_all_qc %>%
     ) %>%
   pull(b2b)
 ```
-![spectrum matchup](img/20200414_JWL12_DHA_matchup%202.png  =250x)
-<img src="img/20200414_JWL12_DHA_matchup%202.png" alt="spectrum matchup" width="250px">
+<img src="img/20200414_JWL12_DHA_matchup%202.png" alt="spectrum matchup" width="350px">
 	
 + arranged alongside other stored plots,
 
@@ -60,9 +59,31 @@ ggplot() + areas_all_qc %>%
 b2b <- lapply(scans_best$b2b, function(x){ggplot() + x})
 do.call("grid.arrange", c(b2b, nrow = 5, ncol = 7))
 ```
-![ALL spectrum matchups](img/20200414_cosineMatches_1_40_newCoA%202.png  =250x)
+<img src="img/20200414_cosineMatches_1_40_newCoA%202.png" alt="ALL spectrum matchups" width="350px">
 	
 + overlaid with other `gg` elements, like titles and other plots.
+
+(from [analyze_samples.R](analyze_samples.R))
+```
+# to show all the ROIs integrated in a given sample
+ggplot() + areas_all_qc %>%
+  filter(
+    samp == "JWL0138"
+  ) %>%
+  pull(xic) +
+  ggtitle("all ROIs: sample JWL0138")
+```
+<img src="https://github.com/octopode/tidychrom/blob/master/img/20200414_JWL138_allROIs%202.png" alt="JWL0138 all ROIs" width="350px">
+```
+# or to show all the samples found in a given ROI
+ggplot() + areas_all_qc %>%
+  filter(
+    id == "C22:6"
+  ) %>%
+  pull(xic) +
+  ggtitle("C22:6 (DHA): 39 samples")
+```
+<img src="https://github.com/octopode/tidychrom/blob/master/img/20200414_DHA_allXICs%202.png" alt="DHA all XICs" width="350px">
 
 ## workflows
 
