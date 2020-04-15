@@ -16,7 +16,9 @@ deconvolution, it expects chromatographic data with (1) good separation and
 (2) fairly consistent RTs (within a few sec) across samples.
 
 Something like this:
+
 <img src="img/20200414_masterBPC%202.png" alt="base peak chromatogram" width="500px">
+
 (master base peak chromatogram from [analyze_standards.R](analyze_standards.R))
 	
 Analyze highly complex mixtures at your own risk, and maybe with a dash of special sauce.
@@ -99,3 +101,6 @@ This workflow was made to calculate the ratio (molar percentages) of fatty acid 
 
 3. [Sample ID and relative quantitation](analyze_samples.R)
 
+Comments will walk you through each script.
+All user-provided parameters (including data directories) are provided at the top.
+Data files used in the scripts will be hosted at a later date.
