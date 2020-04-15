@@ -2,7 +2,7 @@
 
 A Dead Simple Toolkit for Quantitative Chromatography
 
-<img src="img/20200414_masterBPC%202.png" alt="base peak chromatogram" width="500px">
+<flowchart>
 
 ## design principles
 
@@ -12,11 +12,12 @@ No fancy algorithms <cough> ordered bijective interpolated time warping </cough>
 though nothing explicitly prevents their use with this package.
 
 **Caveat:** since `tidychrom` does not implement RT adjustment nor spectrum
-deconvolution, it expects
+deconvolution, it expects chromatographic data with (1) good separation and 
+(2) fairly consistent RTs (within a few sec) across samples.
 
-* chromatographic data with good separation (like the chromatogram above) and 
-	
-* fairly consistent RTs (within a few sec) across samples.
+Something like this:
+<img src="img/20200414_masterBPC%202.png" alt="base peak chromatogram" width="500px">
+(master base peak chromatogram from [analyze_standards.R](analyze_standards.R))
 	
 Analyze highly complex mixtures at your own risk, and maybe with a dash of special sauce.
 
@@ -74,6 +75,7 @@ ggplot() + areas_all_qc %>%
   ggtitle("all ROIs: sample JWL0138")
 ```
 <img src="https://github.com/octopode/tidychrom/blob/master/img/20200414_JWL138_allROIs%202.png" alt="JWL0138 all ROIs" width="350px">
+
 ```
 # or to show all the samples found in a given ROI
 ggplot() + areas_all_qc %>%
