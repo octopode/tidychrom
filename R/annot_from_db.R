@@ -4,6 +4,9 @@
 #' @param spectra Grouped (e.g. by \code{scan} tibble with columns \code{mz}, \code{intensity}.
 #' @param dir_db Directory containing database spectrum files in an mzR-readable format (mzXML, mzML, etc.)
 #' @param fname_regex Regex string that can be used to prefilter database files (generally the suffix.)
+#' @return A summary of the input tibble with additional columns:
+#' \code{file} (basename of the best-matching database spectrum file)
+#' \code{cos} (cosine matchup score for that file)
 #' @keywords annot annotate db database
 #' @export
 #' @examples
