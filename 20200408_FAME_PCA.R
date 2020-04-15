@@ -4,13 +4,6 @@ library(gridExtra)
 library(phytools)
 library(tidyverse)
 
-palette.deepc <- colorRampPalette(c(
-  "#E9EAC6",
-  "#3877A4",
-  "#8B7CB3",
-  "#BF2E55"
-))
-
 colon2fa <- Vectorize(function(cpd){
   if(str_detect(cpd, ":0")) {return("SFA")}
   if(str_detect(cpd, ":1")) {return("MUFA")}
@@ -20,7 +13,7 @@ colon2fa <- Vectorize(function(cpd){
 
 ## TSV handling, borrowed from 20190201_FAMEs_facet.R but tidied somewhat
 # load data with header from second row of the TSV and then drop unnamed columns
-data_file <- "/Users/jwinnikoff/Documents/MBARI/Lipids/CtenoLipids2020/tidychrom/example_data/20200408_LipidExtracts.tsv"
+data_file <- "/Users/jwinnikoff/Documents/MBARI/Lipids/tidychrom/example_data/20200408_LipidExtracts.tsv"
 num_headerrows = 3 # number of rows with header-type info
 header_rownum = 3 # row to use for R headers
 
@@ -28,37 +21,40 @@ headers = read_tsv(data_file, skip = header_rownum-1, col_names = T, n_max = 1)
 fame_data = read_tsv(data_file, skip = num_headerrows, col_names = F)
 colnames(fame_data) = colnames(headers)
 
+# extract the environmental data from that monster
 envi_data <- fame_data %>%
   select(
     eid,
     depth_med,
     depth_col,
     temp_med,
-    temp_col
+    temp_col,
+    X3 #species
   ) %>%
-  filter(!is.na(eid))
+  filter(!is.na(eid)) %>%
+  rename(
+    eid = "samp",
+    X3 = "sp"
+    )
 
 # taking areas_all_qc from analyze_samples.R in tidychrom
 composition_wide <- areas_all_qc %>%
   ungroup() %>%
+  #mutate(id = as.factor(id)) %>%
   select(samp, id, molar.per.cent) %>%
-  spread(key = "id", value = "molar.per.cent") %>%
-  replace_na(setNames(as.list(rep(0, ncol(.))), colnames(.)))
+  # leaving the standards in makes it unspreadable
+  filter(samp != "Supel37") %>%
+  spread(id, molar.per.cent, drop = FALSE, fill = 0) %>%
+  # add in the preliminary
+  bind_rows()
+
+envi_data <- composition_wide %>%
+  left_join(envi_data, by = "samp")
 
 # run PCA
 fame_pca <- composition_wide %>%
   select(-samp) %>%
   prcomp(center = TRUE, scale = TRUE)
-
-envi_data <- composition_wide %>%
-  left_join(envi_data, by = "samp")
-
-palette.deepc <- colorRampPalette(c(
-  "#E9EAC6",
-  "#3877A4",
-  "#8B7CB3",
-  "#BF2E55"
-))
 
 # which PCs correlate best with depth and temperature?
 cor(fame_pca$x, envi_data$depth_col, use="complete.obs") %>% tibble() %>% # depth corrs
