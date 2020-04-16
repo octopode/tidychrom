@@ -12,17 +12,7 @@ No fancy algorithms `<cough>`ordered bijective interpolated time warping`</cough
 though nothing explicitly prevents their use with this package.
 
 **Caveat:** since `tidychrom` does not implement RT adjustment nor spectrum
-deconvolution, it expects chromatographic data with 
-
-* good separation and 
-	
-* fairly consistent RTs (within a few sec) across samples, like this:
-
-<img src="img/20200414_masterBPC%202.png" alt="base peak chromatogram" width="500px">
-
-(master base peak chromatogram from [analyze_standards.R](analyze_standards.R))
-	
-Analyze highly complex mixtures at your own risk, and maybe with a dash of special sauce.
+deconvolution, it expects chromatographic data with good separation and fairly consistent RTs (within a few sec) across samples. Analyze highly complex mixtures at your own risk, and maybe with a dash of special sauce.
 
 2. **data you can see and touch**
 
@@ -30,9 +20,13 @@ Existing R-based chromatography solutions rely on S3/4 objects with slots
 that are not really standardized. This package attempts to keep all analysis
 products in tibbles and facilitate downstream analysis with `dplyr`. Visualization is implemented with `ggplot2`.
 
+<img src="img/20200414_masterBPC%202.png" alt="base peak chromatogram" width="500px">
+
+(master base peak chromatogram from [analyze_standards.R](analyze_standards.R))
+
 ## project structure
 
-This repo contains a couple pre-cooked workflows (see **workflows** below), but above all, tidychrom is meant to be modular. Take the handful of functions provided and use them in your own `dplyr`-based workflows, perhaps with inspiration from those provided here. To aid you in dissecting this repo, some tips on its organization:
+This repo contains a couple pre-cooked workflows (see **[workflows](#workflows)** below), but above all, tidychrom is meant to be modular. Take the handful of functions provided and use them in your own `dplyr`-based workflows, perhaps with inspiration from those provided here. To aid you in dissecting this repo, some tips on its organization:
 
 1. There are no custom objects nor methods, only functions.
 
