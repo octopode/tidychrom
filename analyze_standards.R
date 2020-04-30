@@ -11,12 +11,12 @@ library(RColorBrewer)
 
 # USER PARAMETERS
 # location of blanked data files
-dir_data  <-  "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/cdf/20200212/stds"
+dir_data  <-  "~/Documents/MBARI/Lipids/GCMSData/cdf/20200212/stds"
 # search pattern for blanked data files
 mzxmls <- list.files(path = dir_data, pattern = "blanked.mzxml", full.names = T)
 # location of EI-MS database
-#dir_db <-     "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/db/supel37/MoNA" # downloaded spectra
-dir_db <-     "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/db/supel37/20200414_JRW" # my own library
+#dir_db <-     "~/Documents/MBARI/Lipids/GCMSData/db/supel37/MoNA" # downloaded spectra
+dir_db <-     "~/Documents/MBARI/Lipids/GCMSData/db/supel37/20200414_JRW" # my own library
 # location of standard mix datasheet (as TSV)
 file_coa <-   "example_data/Supel37_DB23.tsv"
 # where to save ROI summary data

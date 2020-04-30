@@ -17,6 +17,7 @@ file_areas_all <- "example_data/areas_all.RData"
 # where ROI summary (ID, LoL) data is stored
 file_scans_best <- "example_data/scans_best.RData"
 
+
 # resolution of the mass analyzer
 bin_width_mz <- 1
 # number of peaks to identify in the standard mix
@@ -38,9 +39,9 @@ qc <- tibble(
 )
 for(dir_data in c(
   # session subdirectories
-  "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/cdf/20200213",
-  "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/cdf/20200214",
-  "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/cdf/20200215"
+  "~/Documents/MBARI/Lipids/GCMSData/cdf/20200213",
+  "~/Documents/MBARI/Lipids/GCMSData/cdf/20200214",
+  "~/Documents/MBARI/Lipids/GCMSData/cdf/20200215"
 )){
   ## list data files in directory
   mzxmls <- list.files(path = dir_data, pattern = "blanked.mzxml", full.names = T)
