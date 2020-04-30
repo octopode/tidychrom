@@ -37,12 +37,16 @@ qc <- tibble(
   status = character(),
   reason = character(),
 )
-for(dir_data in c(
+
+base_path = "~/Documents/MBARI/Lipids/GCMSData/"
+
+for(subdir in c(
   # session subdirectories
-  "~/Documents/MBARI/Lipids/GCMSData/cdf/20200213",
-  "~/Documents/MBARI/Lipids/GCMSData/cdf/20200214",
-  "~/Documents/MBARI/Lipids/GCMSData/cdf/20200215"
+   "cdf/20200213",
+   "cdf/20200214",
+   "cdf/20200215"
 )){
+  dir_data = paste(base_path,subdir,sep="")
   ## list data files in directory
   mzxmls <- list.files(path = dir_data, pattern = "blanked.mzxml", full.names = T)
   # load raw data for the master
