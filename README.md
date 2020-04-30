@@ -2,7 +2,9 @@
 
 A Dead Simple Toolkit for Quantitative Chromatography
 
-<flowchart-logo>
+This package takes **raw chromatographic data** (mass spec or colorimetric) and outputs **relative or absolute quantities of identified compounds** for **compositional biochemistry analyses.** It reproduces functions of proprietary instrument software, so researchers can **liberate raw data** and **script reproducible analyses.**
+
+<img src="img/20200425_flowchart.png" alt="workflow overview" width="500px">
 
 ## design principles
 
