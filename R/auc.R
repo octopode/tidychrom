@@ -4,7 +4,7 @@
 #' returning the RT window as well as overall and baseline-corrected integrals.
 #' @param chromdata Tibble with columns \code{rt} and \code{intensity}, pre-grouped by peak (e.g. by ROI.)
 #' @return A summary of the input tibble with additional columns:
-#' \code{rtmin}, \code{rtmax},
+#' \code{rt_min}, \code{rt_max},
 #' \code{into} (integral overall),
 #' \code{intb} (integral baseline-corrected)
 #' @keywords area integral peak curve
