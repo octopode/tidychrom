@@ -43,7 +43,7 @@ for(dir_data in c(
   "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/cdf/20200215"
 )){
   ## list data files in directory
-  mzxmls <- list.files(path = dir_data, pattern = "blanked.mzxml", full.names = T)
+  mzxmls <- list.files(path = dir_data, pattern = "JWL25_blanked.mzxml", full.names = T)
   # load raw data for the master
   chromdata_master <- file.path(dir_data, file_stds) %>%
     read_tidymass() %>%
@@ -326,11 +326,14 @@ ggplot() + areas_all_qc %>%
   ggtitle("all ROIs: sample JWL0138")
 
 # or to show all the samples found in a given ROI
+samples <- c("JWL0025")
+cpd <- "C20:5"
 ggplot() + areas_all_qc %>%
   filter(
-    id == "C22:6"
+    id == cpd,
+    samp %in% samples
   ) %>%
   pull(xic) +
-  ggtitle("C22:6 (DHA): 39 samples")
+  ggtitle(paste(cpd, "in", samples))
 # the stored plots are already titled, so the top-level
 # title should be overwritten with your own
