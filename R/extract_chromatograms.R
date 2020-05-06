@@ -24,19 +24,39 @@ extract_chromatograms <- function(peaks, chromdata, x = "mz", cores = 1){
     select(-intensity) %>%
     rename(
       rt = "rt_peak",
-      mz = "mz_peak" # NTS: NEED TO WORK OUT X-SUBSTITUTION HERE AND IN BELOW FILTERS!!
+      mz = "mz_peak" #NTS: NEED TO WORK OUT X-SUBSTITUTION HERE AND IN BELOW FILTERS!!
       # maybe best to just rename to `x` and `x_peak` at top of the function
       ) %>%
     mutate(
       rt_min = chromdata %>%
         filter(mz == mz_peak) %>%
-        filter((rt < rt_peak) & ((intensity <= lag(intensity)) | is.na(lag(intensity)) | rt == min(rt)) & (intensity < lead(intensity))) %>%
+        # peak start criteria
+        filter(
+          (rt < rt_peak) & # comes before the peak
+          (scan == lead(scan) - 1) & # next scan contains the same ion/wavelength
+          (intensity < lead(intensity)) & # < the next value
+          (
+            (intensity <= lag(intensity)) | # <= the previous value (partially resolved peaks)
+            is.na(lag(intensity)) | # or previous value DNE
+            rt == min(rt) # or it's the very first point in the dataset
+          )
+        ) %>%
         # last value before the peak
         filter(rt == max(rt)) %>%
         pull(rt),
       rt_max = chromdata %>%
         filter(mz == mz_peak) %>%
-        filter((rt > rt_peak) & (intensity < lag(intensity)) & ((intensity <= lead(intensity)) | is.na(lead(intensity)) | rt == max(rt))) %>%
+        # peak end criteria
+        filter(
+          (rt > rt_peak) & # comes after the peak
+          (scan == lag(scan) + 1) & # previous scan contains the same ion/wavelength
+          (intensity < lag(intensity)) & # < the last value
+          (
+            (intensity <= lead(intensity)) | # <= the next value (partially resolved peaks)
+            is.na(lead(intensity)) | # or previous value DNE
+            rt == max(rt) # or it's the very last point in the dataset
+          )
+        ) %>%
         # first value after the peak
         filter(rt == min(rt)) %>%
         pull(rt)
