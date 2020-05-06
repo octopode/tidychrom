@@ -3,11 +3,16 @@
 # Preprocessing script to read in blank chromatographic runs, average them scanwise,
 # then subtract the average from a set of experimental runs
 
-for(dir_data in c(
-  "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/cdf/20200213",
-  "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/cdf/20200214",
-  "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/cdf/20200215"
+
+base_path = "~/Documents/MBARI/Lipids/GCMSData/"
+
+for(subdir in c(
+  # session subdirectories
+   "cdf/20200213",
+   "cdf/20200214",
+   "cdf/20200215"
 )){
+  dir_data = paste(base_path,subdir,sep="")
   # filter for file type
   cdfs <- list.files(path = dir_data, pattern = ".cdf", full.names = T)
   # blank runs

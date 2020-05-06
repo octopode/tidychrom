@@ -4,7 +4,7 @@
 # then subtract the average from a set of experimental runs
 
 # where are all the data?
-dir_data    <- "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/cdf/20200212/stds"
+dir_data    <- "~/Documents/MBARI/Lipids/GCMSData/cdf/20200212/stds"
 # filter for file type
 cdfs <- list.files(path = dir_data, pattern = ".cdf", full.names = T)
 # blank runs
