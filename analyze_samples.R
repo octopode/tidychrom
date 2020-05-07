@@ -24,6 +24,8 @@ bin_width_mz <- 1
 n_stds <- 35
 # width in sec of regions of interest (ROIs) used for matching standard peaks
 roi_width <- 4
+# knee parameter (fraction of steeper slope) for bounding peaks
+param_knee <- 100
 # minimum acceptable cosine similarity to consider two spectra matching
 cos_min <- 0.5
 # minimum acceptable area of all matched peaks (lower limit QC)
@@ -161,7 +163,7 @@ for(subdir in c(
 
       xics_matched <- peaks_matched %>%
         # parallelizing speeds it up
-        extract_chromatograms(chromdata, cores = detectCores())
+        extract_chromatograms(chromdata, knee = param_knee, cores = detectCores())
 
       # integrate those XICs
       message("integrating XICs")
@@ -258,7 +260,7 @@ for(subdir in c(
 
 ## Post-analysis: QC and area normalization
 # get LoL data, if it's not already loaded
-#load(file_scans_best)
+load(file_scans_best)
 
 # Quality Control:
 # Lower limit - total matched peak area threshold:
@@ -293,7 +295,7 @@ areas_all_qc <- areas_all %>%
 areas_all_qc <- areas_all_qc %>%
   left_join(
     scans_best %>%
-      mutate(molar.per.area = conc_molar * dil / intb) %>%
+      mutate(molar.per.area = conc_mol.per.L * dil / intb) %>%
       select(roi, id, molar.per.area),
     by = "roi"
   ) %>%
@@ -307,28 +309,47 @@ areas_all_qc <- areas_all_qc %>%
 ## Visualization:
 # Spectral matchups and integrated XICs for every single peak are stored
 # in areas_all and areas_all_qc. They can be accessed individually like so:
-ggplot() + areas_all_qc %>%
-  filter(
-    samp == "JWL0012" &
-      id == "C22:6"
-    ) %>%
-  pull(b2b)
+#ggplot() + areas_all_qc %>%
+#  filter(
+#    samp == "JWL0012" &
+#      id == "C22:6"
+#    ) %>%
+#  pull(b2b)
 
-ggplot() + areas_all_qc %>%
+# 20200507
+ggplot() + areas_all %>%
   filter(
-    samp == "JWL0012" &
-      id == "C22:6"
+    #samp == "JWL0025" &
+    #roi == 29
   ) %>%
   pull(xic)
 
 # series of xics can also be overlaid:
 # e.g. to show all the ROIs integrated in a given sample
-ggplot() + areas_all_qc %>%
+ggplot() +
+  areas_all_qc %>%
   filter(
-    samp == "JWL0138"
+    samp == "JWL0025"
   ) %>%
   pull(xic) +
-  ggtitle("all ROIs: sample JWL0138")
+  ggtitle("all ROIs: sample JWL0025")
+
+# 20200507
+ggplot() +
+  # overlay a BPC
+  #geom_line(
+  #  data = chromdata %>%
+  #    group_by(scan) %>%
+  #    filter(rt >= 600) %>%
+  #    filter(intensity == max(intensity)),
+  #  aes(x = rt, y = intensity)
+  #) +
+  areas_all_qc %>%
+  filter(
+    samp == "JWL0025"
+  ) %>%
+  pull(xic) +
+  ggtitle("all ROIs: sample JWL0025")
 
 # or to show all the samples found in a given ROI
 samples <- c("JWL0025")
@@ -342,3 +363,11 @@ ggplot() + areas_all_qc %>%
   ggtitle(paste(cpd, "in", samples))
 # the stored plots are already titled, so the top-level
 # title should be overwritten with your own
+
+# this plot call can be used to check the knee parameter (make sure all the peaks are centered in frame)
+# to plot out a grid
+# extract and plotify
+frames <- lapply(areas_all$xic, function(x){ggplot() + x})
+pdf("20200507_xics.pdf", width = 50, height = 25)
+do.call("grid.arrange", c(frames, nrow = 5, ncol = 7))
+dev.off()
