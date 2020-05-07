@@ -52,7 +52,8 @@ extract_chromatograms <- function(peaks, chromdata, x = "mz", knee = 100, cores 
           (intensity < lead(intensity)) & # < the next value
           (
             #(intensity <= lag(intensity)) | # <= the previous value (partially resolved peaks)
-            (intensity - lag(intensity))/(rt - lag(rt)) <=  (1/knee)*(lead(intensity) - intensity)/(lead(rt) - rt) | # knee criterion
+            # lag slope is *less positive* than 1/knee * lead slope
+            (intensity - lag(intensity))/(rt - lag(rt)) <= (1/knee)*(lead(intensity) - intensity)/(lead(rt) - rt) | # knee criterion
             is.na(lag(intensity)) | # or previous value DNE
             rt == min(rt) # or it's the very first point in the dataset
           )
@@ -72,7 +73,8 @@ extract_chromatograms <- function(peaks, chromdata, x = "mz", knee = 100, cores 
           (intensity < lag(intensity)) & # < the last value
           (
             #(intensity <= lead(intensity)) | # <= the next value (partially resolved peaks)
-            (intensity - lead(intensity))/(rt - lead(rt)) >= (1/knee)*(lag(intensity) - intensity)/(lag(rt) - rt) | # knee criterion
+            # lead slope is *less negative* than 1/knee * lag slope
+            (lead(intensity) - intensity)/(lead(rt) - rt) >= (1/knee)*(intensity - lag(intensity))/(rt - lag(rt)) | # knee criterion
             is.na(lead(intensity)) | # or previous value DNE
             rt == max(rt) # or it's the very last point in the dataset
           )
