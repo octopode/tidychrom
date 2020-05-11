@@ -12,7 +12,7 @@
 #' xics_matched <- peaks_matched %>%
 #' extract_chromatograms(chromdata)
 #'
-extract_chromatograms <- function(peaks, chromdata, x = "mz", knee = 100, cores = 1){
+extract_chromatograms <- function(peaks, chromdata, x = "mz", knee = 10, cores = 1){
 
   chromdata <- chromdata %>%
     ungroup() %>%
