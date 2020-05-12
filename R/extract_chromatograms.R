@@ -3,7 +3,6 @@
 #' @param peaks Tibble with columns \code{scan} and \code{mz}/\code{wl}, and other identifiers
 #' @param chromdata Full-spectrum chromatographic data
 #' @param x Name of x-axis variable (\code{mz} or \code{wl}, etc.)
-#' @param knee Criterion for detecting knee of peak. Lesser slope <= knee*greater slope.
 #' @return A tibble of XICs or single-wavelength chromatograms for the full peaks
 #' centered on \code{scan} (ready for integration!) Peak ID columns like roi are preserved.
 #' @keywords extract chromatogram
@@ -12,11 +11,21 @@
 #' xics_matched <- peaks_matched %>%
 #' extract_chromatograms(chromdata)
 #'
-extract_chromatograms <- function(peaks, chromdata, x = "mz", knee = 10, cores = 1){
+extract_chromatograms <- function(peaks, chromdata, x = "mz", cores = 1){
 
+  # differentiate XICs x3
   chromdata <- chromdata %>%
-    ungroup() %>%
-    arrange(rt)
+    group_by(mz) %>%
+    arrange(rt) %>%
+    mutate(
+      # first derivative (interpolated)
+      d1I_dt1 =   ((intensity - lag(intensity)) / (rt - lag(rt)) + (lead(intensity) - intensity) / (lead(rt) - rt))/2,
+      # second "
+      d2I_dt2 = (lead(d1I_dt1) - lag(d1I_dt1)) / (lead(rt) - lag(rt)),
+      # third "
+      d3I_dt3 = (lead(d2I_dt2) - lag(d2I_dt2)) / (lead(rt) - lag(rt))
+    )
+
   # get minimum time between scans
   scan_time <- chromdata %>%
     select(rt) %>%
@@ -41,21 +50,19 @@ extract_chromatograms <- function(peaks, chromdata, x = "mz", knee = 10, cores =
       ) %>%
     mutate(
       rt_min = chromdata %>%
-        filter(mz == mz_peak) %>%
+        filter(
+          (mz == mz_peak) & # extract signal ion
+          (rt < rt_peak) # comes before the peak
+          ) %>%
         # peak start criteria
         filter(
-          (rt < rt_peak) & # comes before the peak
-          # this condition is acting spuriously
-          #(scan == lead(scan) - 1) & # next scan contains the same ion/wavelength
-          # refactor it to use rt only
-          (lead(rt) <= rt + (2 * scan_time)) & # next scan not more than 2 scan times away
-          (intensity < lead(intensity)) & # < the next value
           (
-            #(intensity <= lag(intensity)) | # <= the previous value (partially resolved peaks)
-            # lag slope is *less positive* than 1/knee * lead slope
-            (intensity - lag(intensity))/(rt - lag(rt)) <= (1/knee)*(lead(intensity) - intensity)/(lead(rt) - rt) | # knee criterion
-            is.na(lag(intensity)) | # or previous value DNE
-            rt == min(rt) # or it's the very first point in the dataset
+            # conditions for a fully resolved peak
+            (d3I_dt3 >= 0) & (lead(d3I_dt3) < 0) # next point is a concavity maximum
+          ) | # or
+          (
+            # for a partially resolved peak
+            (lead(intensity) > intensity) & (lag(intensity) > intensity) # this point is a crotch
           )
         ) %>%
         # last value before the peak
@@ -64,19 +71,19 @@ extract_chromatograms <- function(peaks, chromdata, x = "mz", knee = 10, cores =
         # if there is no peak, still gotta return something!
         #ifelse(. == Inf, ., NA),
       rt_max = chromdata %>%
-        filter(mz == mz_peak) %>%
+        filter(
+          (mz == mz_peak) &
+          (rt > rt_peak) # comes after the peak
+        ) %>%
         # peak end criteria
         filter(
-          (rt > rt_peak) & # comes after the peak
-          #(scan == lag(scan) + 1) & # previous scan contains the same ion/wavelength
-          (lag(rt) >= rt - (2 * scan_time)) & # previous scan not more than 2 scan times away
-          (intensity < lag(intensity)) & # < the last value
           (
-            #(intensity <= lead(intensity)) | # <= the next value (partially resolved peaks)
-            # lead slope is *less negative* than 1/knee * lag slope
-            (lead(intensity) - intensity)/(lead(rt) - rt) >= (1/knee)*(intensity - lag(intensity))/(rt - lag(rt)) | # knee criterion
-            is.na(lead(intensity)) | # or previous value DNE
-            rt == max(rt) # or it's the very last point in the dataset
+            # conditions for a fully resolved peak
+            (lag(d3I_dt3) > 0) & (d3I_dt3 <= 0) # previous point is a concavity maximum
+          ) | # or
+          (
+            # for a partially resolved peak
+            (lead(intensity) > intensity) & (lag(intensity) > intensity) # this point is a crotch
           )
         ) %>%
         # first value after the peak
