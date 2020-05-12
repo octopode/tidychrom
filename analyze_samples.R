@@ -15,7 +15,8 @@ file_stds   <- "Supel37_1_8_blanked.mzXML"
 # autosaves after reading every data file
 file_areas_all <- "example_data/areas_all.RData"
 # where ROI summary (ID, LoL) data is stored
-file_scans_best <- "example_data/scans_best.RData"
+#file_scans_best <- "example_data/scans_best.RData"
+file_scans_best <- "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/cdf/20200212/stds/scans_best.RData"
 
 
 # resolution of the mass analyzer
@@ -24,8 +25,6 @@ bin_width_mz <- 1
 n_stds <- 35
 # width in sec of regions of interest (ROIs) used for matching standard peaks
 roi_width <- 4
-# knee parameter (fraction of steeper slope) for bounding peaks
-param_knee <- 100
 # minimum acceptable cosine similarity to consider two spectra matching
 cos_min <- 0.5
 # minimum acceptable area of all matched peaks (lower limit QC)
@@ -50,7 +49,7 @@ for(subdir in c(
 )){
   dir_data = paste(base_path,subdir,sep="")
   ## list data files in directory
-  mzxmls <- list.files(path = dir_data, pattern = "JWL25_blanked.mzxml", full.names = T)
+  mzxmls <- list.files(path = dir_data, pattern = "_blanked.mzxml", full.names = T)
   # load raw data for the master
   chromdata_master <- file.path(dir_data, file_stds) %>%
     read_tidymass() %>%
@@ -163,7 +162,7 @@ for(subdir in c(
 
       xics_matched <- peaks_matched %>%
         # parallelizing speeds it up
-        extract_chromatograms(chromdata, knee = param_knee, cores = detectCores())
+        extract_chromatograms(chromdata, cores = detectCores())
 
       # integrate those XICs
       message("integrating XICs")
@@ -320,7 +319,7 @@ areas_all_qc <- areas_all_qc %>%
 ggplot() + areas_all %>%
   filter(
     #samp == "JWL0025" &
-    #roi == 29
+    roi == 29
   ) %>%
   pull(xic)
 
@@ -337,16 +336,16 @@ ggplot() +
 # 20200507
 ggplot() +
   # overlay a BPC
-  #geom_line(
-  #  data = chromdata %>%
-  #    group_by(scan) %>%
-  #    filter(rt >= 600) %>%
-  #    filter(intensity == max(intensity)),
-  #  aes(x = rt, y = intensity)
-  #) +
-  areas_all_qc %>%
+  geom_line(
+    data = chromdata %>%
+      group_by(scan) %>%
+      filter(rt >= 600) %>%
+      filter(intensity == max(intensity)),
+    aes(x = rt, y = intensity)
+  ) +
+  areas_all %>%
   filter(
-    samp == "JWL0025"
+    #samp == "JWL0025"
   ) %>%
   pull(xic) +
   ggtitle("all ROIs: sample JWL0025")
@@ -364,10 +363,16 @@ ggplot() + areas_all_qc %>%
 # the stored plots are already titled, so the top-level
 # title should be overwritten with your own
 
-# this plot call can be used to check the knee parameter (make sure all the peaks are centered in frame)
+# this can be used to check peak bounding conditions in extract_chromatograms()
 # to plot out a grid
 # extract and plotify
 frames <- lapply(areas_all$xic, function(x){ggplot() + x})
-pdf("20200507_xics.pdf", width = 50, height = 25)
+frames <- lapply(
+  areas_all %>%
+    group_by(roi) %>%
+    summarize(xic = list(xic)) %>%
+    pull(xic),
+  function(x){ggplot() + x})
+pdf("20200512_xics_all.pdf", width = 50, height = 25)
 do.call("grid.arrange", c(frames, nrow = 5, ncol = 7))
 dev.off()
