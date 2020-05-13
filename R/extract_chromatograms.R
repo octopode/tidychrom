@@ -3,6 +3,7 @@
 #' @param peaks Tibble with columns \code{scan} and \code{mz}/\code{wl}, and other identifiers
 #' @param chromdata Full-spectrum chromatographic data
 #' @param x Name of x-axis variable (\code{mz} or \code{wl}, etc.)
+#' @param scans_gap Number of consecutive missing scans allowed in a peak
 #' @return A tibble of XICs or single-wavelength chromatograms for the full peaks
 #' centered on \code{scan} (ready for integration!) Peak ID columns like roi are preserved.
 #' @keywords extract chromatogram
@@ -11,10 +12,11 @@
 #' xics_matched <- peaks_matched %>%
 #' extract_chromatograms(chromdata)
 #'
-extract_chromatograms <- function(peaks, chromdata, x = "mz", cores = 1){
+extract_chromatograms <- function(peaks, chromdata, x = "mz", scans_gap = 3, cores = 1){
 
   # differentiate XICs x3
-  chromdata <- chromdata %>%
+  chromdata_diff <- chromdata %>%
+    ungroup() %>%
     group_by(mz) %>%
     arrange(rt) %>%
     mutate(
@@ -26,7 +28,7 @@ extract_chromatograms <- function(peaks, chromdata, x = "mz", cores = 1){
       d3I_dt3 = (lead(d2I_dt2) - lag(d2I_dt2)) / (lead(rt) - lag(rt))
     )
 
-  # get minimum time between scans
+  ## get minimum time between scans
   scan_time <- chromdata %>%
     select(rt) %>%
     mutate(delta = lead(rt) - rt) %>%
@@ -49,12 +51,13 @@ extract_chromatograms <- function(peaks, chromdata, x = "mz", cores = 1){
       # maybe best to just rename to `x` and `x_peak` at top of the function
       ) %>%
     mutate(
-      rt_min = chromdata %>%
+      rt_min = chromdata_diff %>%
         filter(
           (mz == mz_peak) & # extract signal ion
           (rt < rt_peak) # comes before the peak
           ) %>%
         # peak start criteria
+        filter(lead(rt) <= rt + scans_gap*scan_time) %>%  # candidate point must be followed by a point <= n scans away
         filter(
           (
             # conditions for a fully resolved peak
@@ -62,20 +65,21 @@ extract_chromatograms <- function(peaks, chromdata, x = "mz", cores = 1){
           ) | # or
           (
             # for a partially resolved peak
-            (lead(intensity) > intensity) & (lag(intensity) > intensity) # this point is a crotch
+            (lead(intensity) > intensity) & (lag(intensity) >= intensity) # this point is a crotch
           )
         ) %>%
         # last value before the peak
         pull(rt) %>%
-        max(),# %>%
-        # if there is no peak, still gotta return something!
-        #ifelse(. == Inf, ., NA),
-      rt_max = chromdata %>%
+        max() %>%
+        # if there is no valid peak limit, nix the peak
+        ifelse(. != -Inf, ., NA),
+      rt_max = chromdata_diff %>%
         filter(
           (mz == mz_peak) &
           (rt > rt_peak) # comes after the peak
         ) %>%
         # peak end criteria
+        filter(lag(rt) >= rt - scans_gap*scan_time) %>%  # candidate point must be followed by a point <= n scans away
         filter(
           (
             # conditions for a fully resolved peak
@@ -83,14 +87,14 @@ extract_chromatograms <- function(peaks, chromdata, x = "mz", cores = 1){
           ) | # or
           (
             # for a partially resolved peak
-            (lead(intensity) > intensity) & (lag(intensity) > intensity) # this point is a crotch
+            (lead(intensity) >= intensity) & (lag(intensity) > intensity) # this point is a crotch
           )
         ) %>%
         # first value after the peak
         pull(rt) %>%
-        min()# %>%
-        # if there is no peak, still gotta return something!
-        #ifelse(. == Inf, ., NA),
+        min() %>%
+        # if there is no valid peak limit, nix the peak
+        ifelse(. != Inf, ., NA),
     )
 
   # need to iterate over ROIs rather than filtering chromdata,
