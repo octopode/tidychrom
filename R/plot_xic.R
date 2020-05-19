@@ -15,8 +15,9 @@ plot_xic <- function(coords, alpha = 0.4){
     # plot the line
     geom_line(data = coords, aes(x = rt, y = intensity)),
     # and the baselined area
-    geom_area(data = coords, aes(x = rt, y = intensity), alpha = alpha),
-    geom_area(data = bind_rows(head(coords, 1), tail(coords, 1)), aes(x = rt, y = intensity), fill = "white"),
+    geom_polygon(data = coords, aes(x = rt, y = intensity), alpha = alpha),
+    #geom_area(data = coords, aes(x = rt, y = intensity), alpha = alpha),
+    #geom_area(data = bind_rows(head(coords, 1), tail(coords, 1)), aes(x = rt, y = intensity), fill = "white"),
     theme_pubr()
   )
   return(gg)
