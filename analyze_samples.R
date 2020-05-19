@@ -17,7 +17,8 @@ file_areas_all <- "example_data/areas_all.RData"
 # where ROI summary (ID, LoL) data is stored
 #file_scans_best <- "example_data/scans_best.RData"
 file_scans_best <- "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/cdf/20200212/stds/scans_best.RData"
-
+# where to save an output file of pct composition
+file_tsv_out <- "20200518_pct_wide.tsv"
 
 # resolution of the mass analyzer
 bin_width_mz <- 1
@@ -27,8 +28,10 @@ n_stds <- 35
 roi_width <- 4
 # minimum acceptable cosine similarity to consider two spectra matching
 cos_min <- 0.5
+# hard intensity threshold for XICs
+threshold_quan <- 1000
 # minimum acceptable area of all matched peaks (lower limit QC)
-area_matched_min = 2E5
+area_matched_min = 1E5
 
 # init areas table
 areas_all <- NULL
@@ -49,7 +52,7 @@ for(subdir in c(
 )){
   dir_data = paste(base_path,subdir,sep="")
   ## list data files in directory
-  mzxmls <- list.files(path = dir_data, pattern = "_blanked.mzxml", full.names = T)
+  mzxmls <- list.files(path = dir_data, pattern = "blanked.mzxml", full.names = T)
   # load raw data for the master
   chromdata_master <- file.path(dir_data, file_stds) %>%
     read_tidymass() %>%
@@ -162,7 +165,7 @@ for(subdir in c(
 
       xics_matched <- peaks_matched %>%
         # parallelizing speeds it up
-        extract_chromatograms(chromdata, cores = detectCores())
+        extract_chromatograms(chromdata, threshold = threshold_quan, cores = detectCores())
 
       # integrate those XICs
       message("integrating XICs")
@@ -171,6 +174,13 @@ for(subdir in c(
         auc() %>%
         # and append column identifying the file
         mutate(file = basename(file))
+
+      ## multithread plotting
+      #message("generating plots")
+      #peak_areas <- peak_areas %>%
+      #  group_by(roi) %>%
+      #  bind_cols(b2b_parallel(.)) %>%
+      #  bind_cols(xic_parallel(.))
 
       message("generating plots")
       peak_areas <- peak_areas %>%
@@ -256,6 +266,10 @@ for(subdir in c(
     }
   } # end subdirectory
 } # end all subdirectories
+# add column with EID
+areas_all <- areas_all %>%
+  group_by(file) %>%
+  mutate(samp = filename2samp(file))
 
 ## Post-analysis: QC and area normalization
 # get LoL data, if it's not already loaded
@@ -276,7 +290,7 @@ qc <- areas_all %>%
 
 # Upper limit - all peaks must be within limit of linearity
 qc <- areas_all %>%
-  left_join(scans_best %>% select(-intb, -file), by = "roi") %>%
+  left_join(scans_best_id %>% select(-intb, -file), by = "roi") %>%
   filter(intb > intb_max) %>%
   group_by(file) %>%
   summarise(
@@ -289,90 +303,119 @@ qc <- areas_all %>%
 areas_all_qc <- areas_all %>%
   filter(!(file %in% qc$file))
 
+# clean up the integrated peak data post hoc
+# tune these parameters using windowed XIC plot at bottom
+areas_qc_clean <- areas_all_qc %>%
+  filter(intb > 0) %>%
+  # e.g. cut out inordinately broad peaks
+  filter((rt_max - rt_min) <= 12) %>%
+  # and remove outlier RTs
+  group_by(roi) %>%
+  # could also weight by intensity here instead of integral
+  filter(abs(rt - fmean(x=rt, w=intb)) <= 4*fsd(x=rt, w=intb))
+
+# here's what you just threw out
+areas_qc_trash <- areas_all_qc %>%
+  anti_join(areas_qc_clean, by=c("roi", "file"))
+
 # normalize peak areas to molar percentages
 # NTS: to make more rigorous, need to calculate molar.per.area using each session's standard
-areas_all_qc <- areas_all_qc %>%
+areas_quan <- areas_qc_clean %>%
   left_join(
-    scans_best %>%
-      mutate(molar.per.area = conc_mol.per.L * dil / intb) %>%
+    scans_best_id %>%
+      mutate(molar.per.area = conc_molar * dil / intb) %>%
       select(roi, id, molar.per.area),
     by = "roi"
   ) %>%
   group_by(file) %>%
   mutate(
     molar = molar.per.area * intb,
-    molar.per.cent = 100 * molar / sum(molar),
-    samp = filename2samp(file)
-      )
+    molar.per.cent = 100 * molar / sum(molar)
+  )
+
+# data export
+# save tsv in wide format
+areas_quan %>%
+  filter(samp != "Supel37") %>%
+  ungroup() %>%
+  select(samp, id, molar.per.cent) %>%
+  spread(key = id, value = molar.per.cent) %>%
+  # replace NA -> 0
+  mutate_all(function(x){ifelse(is.na(x), 0, x)}) %>%
+  rename(samp = "eid") %>%
+  write_tsv(file_tsv_out)
 
 ## Visualization:
 # Spectral matchups and integrated XICs for every single peak are stored
 # in areas_all and areas_all_qc. They can be accessed individually like so:
-#ggplot() + areas_all_qc %>%
-#  filter(
-#    samp == "JWL0012" &
-#      id == "C22:6"
-#    ) %>%
-#  pull(b2b)
+samp_viz <- c("JWL0051")
+cpd_viz <- "C20:5"
+roi_viz <- 35
+
+ggplot() + areas_quan %>%
+  filter(
+    samp == samp_viz &
+      id == cpd_viz
+    ) %>%
+  pull(b2b)
 
 # 20200507
-ggplot() + areas_all %>%
+ggplot() + areas_quan %>%
   filter(
-    #samp == "JWL0025" &
-    roi == 29
+    samp %in% samp_viz &
+    id == cpd_viz
   ) %>%
   pull(xic)
 
 # series of xics can also be overlaid:
 # e.g. to show all the ROIs integrated in a given sample
 ggplot() +
-  areas_all_qc %>%
+  areas_quan %>%
   filter(
-    samp == "JWL0025"
+    samp %in% samp_viz
   ) %>%
   pull(xic) +
-  ggtitle("all ROIs: sample JWL0025")
+  ggtitle(paste("all ROIs: sample", samp_viz))
 
 # 20200507
 ggplot() +
   # overlay a BPC
-  geom_line(
-    data = chromdata %>%
-      group_by(scan) %>%
-      filter(rt >= 600) %>%
-      filter(intensity == max(intensity)),
-    aes(x = rt, y = intensity)
-  ) +
-  areas_all %>%
+  #geom_line(
+  #  data = chromdata %>%
+  #    group_by(scan) %>%
+  #    filter(rt >= 600) %>%
+  #    filter(intensity == max(intensity)),
+  #  aes(x = rt, y = intensity)
+  #) +
+  areas_quan %>%
   filter(
-    #samp == "JWL0025"
+    samp == samp_viz
   ) %>%
   pull(xic) +
-  ggtitle("all ROIs: sample JWL0025")
+  ggtitle(paste("all ROIs: sample", samp_viz))
 
 # or to show all the samples found in a given ROI
-samples <- c("JWL0025")
-cpd <- "C20:5"
-ggplot() + areas_all_qc %>%
+ggplot() + areas_qc_clean %>%
   filter(
-    id == cpd,
-    samp %in% samples
+    id == cpd_viz,
+    #samp %in% samp_viz
   ) %>%
   pull(xic) +
-  ggtitle(paste(cpd, "in", samples))
+  ggtitle(paste(cpd_viz, "in", samp_viz))
 # the stored plots are already titled, so the top-level
 # title should be overwritten with your own
 
 # this can be used to check peak bounding conditions in extract_chromatograms()
 # to plot out a grid
 # extract and plotify
-frames <- lapply(areas_all$xic, function(x){ggplot() + x})
+#frames <- lapply(areas_all_qc$xic, function(x){ggplot() + x})
 frames <- lapply(
-  areas_all %>%
+  areas_qc_clean %>%
+  #areas_qc_trash %>%
     group_by(roi) %>%
     summarize(xic = list(xic)) %>%
     pull(xic),
   function(x){ggplot() + x})
-pdf("20200512_xics_all.pdf", width = 50, height = 25)
+pdf("20200518_xics_qc_clean_4wsd.pdf", width = 50, height = 25)
 do.call("grid.arrange", c(frames, nrow = 5, ncol = 7))
 dev.off()

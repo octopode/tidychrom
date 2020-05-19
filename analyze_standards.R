@@ -11,12 +11,16 @@ library(RColorBrewer)
 
 # USER PARAMETERS
 # location of blanked data files
-dir_data  <-  "~/Documents/MBARI/Lipids/GCMSData/cdf/20200212/stds"
+dir_data  <-  "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/cdf/20200212/stds"
 # search pattern for blanked data files
 mzxmls <- list.files(path = dir_data, pattern = "blanked.mzxml", full.names = T)
 # location of EI-MS database
 #dir_db <-     "~/Documents/MBARI/Lipids/GCMSData/db/supel37/MoNA" # downloaded spectra
-dir_db <-     "~/Documents/MBARI/Lipids/GCMSData/db/supel37/20200414_JRW" # my own library
+dir_db <-     "/Users/jwinnikoff/Documents/MBARI/Lipids/GCMSData/db/supel37/20200513_JRW" # my own library
+# try to ID using spectrum library?
+read_spec_db <- F
+# save your own best scans to the library?
+save_spec_db <- T
 # location of standard mix datasheet (as TSV)
 file_coa <-   "example_data/Supel37_DB23.tsv"
 # where to save ROI summary data
@@ -25,7 +29,7 @@ file_scans_best <- file.path(dir_data, "scans_best.RData")
 # resolution of the mass analyzer
 bin_width_mz <- 1
 # index in mzxmls of the "master run" used to identify ROIs for the standards
-index_master <- 6
+index_master <- 10 #6 # is for 1/40 dil
 # number of peaks to identify in the standard mix
 n_stds <- 35
 # width in sec of regions of interest (ROIs) used for matching standard peaks
@@ -34,6 +38,8 @@ roi_width <- 4
 cos_min <- 0.8
 # minimum acceptable R^2 value for calibration curves
 rsq_min <- 0.95
+# hard intensity threshold for XICs
+threshold_quan <- 1000
 
 # load raw data for the master
 chromdata_master <- mzxmls[index_master] %>%
@@ -128,7 +134,7 @@ for(file in mzxmls){
     # get only the one best match for each ROI
     group_by(roi) %>%
     filter(
-      cos > cos_min,
+      cos >= cos_min,
       cos == max(cos)
       ) %>%
     # and assign the master base peak as mz
@@ -145,7 +151,7 @@ for(file in mzxmls){
   # console message is inside the function
   xics_matched <- peaks_matched %>%
     # parallelizing speeds it up
-    extract_chromatograms(chromdata, cores = detectCores())
+    extract_chromatograms(chromdata, threshold = threshold_quan, cores = detectCores())
 
   # integrate those XICs
   message("integrating XICs")
@@ -173,7 +179,17 @@ filename2dil <- c(
   Supel37_1_5k_2_blanked.mzxml  = 1/5000,
   Supel37_1_5k_blanked.mzxml    = 1/5000,
   Supel37_1_8_2_blanked.mzxml   = 1/8,
-  Supel37_1_8_blanked.mzxml     = 1/8
+  Supel37_1_8_blanked.mzxml     = 1/8,
+  Supel37_1_1k_2_blanked_t1000.mzxml  = 1/1000,
+  Supel37_1_1k_blanked_t1000.mzxml    = 1/1000,
+  Supel37_1_200_2_blanked_t1000.mzxml = 1/200,
+  Supel37_1_200_blanked_t1000.mzxml   = 1/200,
+  Supel37_1_40_2_blanked_t1000.mzxml  = 1/40,
+  Supel37_1_40_blanked_t1000.mzxml    = 1/40,
+  Supel37_1_5k_2_blanked_t1000.mzxml  = 1/5000,
+  Supel37_1_5k_blanked_t1000.mzxml    = 1/5000,
+  Supel37_1_8_2_blanked_t1000.mzxml   = 1/8,
+  Supel37_1_8_blanked_t1000.mzxml     = 1/8
 )
 
 # add standard dilution values to the area table
@@ -206,9 +222,11 @@ areas_all %>%
 areas_all <- areas_all %>%
   group_by(roi) %>%
   # force origin because data are pre-blanked
-  summarise(intb_max = lol(dil, intb, rsq = rsq_min, force_origin = T)) %>%
-  # and join it back to the area table so we can filter
-  right_join(areas_all, by = "roi")
+  mutate(intb_max = lol(dil, intb, rsq = rsq_min, force_origin = T))
+
+  #summarise(intb_max = lol(dil, intb, rsq = rsq_min, force_origin = T)) %>%
+  ## and join it back to the area table so we can filter
+  #right_join(areas_all, by = "roi")
 
 # plot standard curves with in-range data for each ROI
 areas_all %>%
@@ -278,13 +296,15 @@ spectra_best <- pblapply(
   do.call(rbind, .) %>%
   as_tibble()
 
-# try to identify these standard spectra using a local EI-MS database
-# and append the id columns to the scans_best tibble
-scans_best <- spectra_best %>%
-  group_by(roi) %>%
-  annot_from_db(dir_db, cores = detectCores()) %>%
-  rename(file = "file_db", cos = "cos_db") %>%
-  right_join(scans_best, by = "roi")
+if(read_spec_db){
+  # try to identify these standard spectra using a local EI-MS database
+  # and append the id columns to the scans_best tibble
+  scans_best <- spectra_best %>%
+    group_by(roi) %>%
+    annot_from_db(dir_db, cores = detectCores()) %>%
+    rename(file = "file_db", cos = "cos_db") %>%
+    right_join(scans_best, by = "roi")
+}
 
 # to undo the above step (remove DB mappings):
 #scans_best <- scans_best %>% select(-file_db, -cos_db)
@@ -295,32 +315,35 @@ scans_best <- spectra_best %>%
 stds_data <- read_tsv(file_coa) #%>%
   #mutate(roi = ifelse(order_elute > 2, order_elute - 2, NA))
 
-scans_best <- scans_best %>%
+scans_best_id <- scans_best %>%
   left_join(stds_data, by = "roi")
 
 # these data can be saved for later sample analysis, in case the session is cleared
 # The important mapping in this dataframe (for QC) is roi:intb_max.
-#save(scans_best, file = file_scans_best)
+save(scans_best_id, file = file_scans_best)
 #
 # finally, save measured standard spectra to the database of authentic standards
-#pbmapply(
-#  scans_best$scan,
-#  scans_best$file,
-#  scans_best$id,
-#  FUN = function(scan_pull, file_pull, id){
-#    file_out <- file.path(dir_db, paste(id, ".mzXML", sep = ""))
-#    spectra_best %>%
-#      filter((scan == scan_pull) & (file == file_pull)) %>%
-#      write_tidymass(file = file_out)
-#    return(file_out)
-#  }
-#)
+if(save_spec_db){
+  pbmapply(
+    scans_best_id$scan,
+    scans_best_id$file,
+    scans_best_id$id,
+    FUN = function(scan_pull, file_pull, id){
+      file_out <- file.path(dir_db, paste(id, ".mzXML", sep = ""))
+      spectra_best %>%
+        filter((scan == scan_pull) & (file == file_pull)) %>%
+        write_tidymass(file = file_out)
+      return(file_out)
+    }
+  )
+}
 
 # Congrats, you determined the LoL for your standards and created a spectrum database!
 # Next, on to Step 3: Relative Quantitation of Samples (analyze_samples.R)
 
 # Generate back-to-back spectrum comparisons of standards vs. library.
-scans_best <- scans_best %>%
+#NTS 20200507: eliminate variable overwriting outside of loops!
+scans_best_id <- scans_best_id %>%
   mutate(
     b2b = spectra_best %>%
       rename(
@@ -361,7 +384,7 @@ scans_best <- scans_best %>%
 
 # to plot out a grid
 # extract and plotify
-b2b <- lapply(scans_best$b2b, function(x){ggplot() + x})
-pdf("20200414_cosineMatches_1_40_newCoA.pdf", width = 50, height = 25)
+b2b <- lapply(scans_best_id$b2b, function(x){ggplot() + x})
+pdf("20200513_cosineMatches_1_8.pdf", width = 50, height = 25)
 do.call("grid.arrange", c(b2b, nrow = 5, ncol = 7))
 dev.off()
