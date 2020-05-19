@@ -11,9 +11,9 @@ auc(chromdata)
 }
 \value{
 A summary of the input tibble with additional columns:
-\code{rtmin}, \code{rtmax},
+\code{rt_min}, \code{rt_max},
 \code{into} (integral overall),
-\code{intb}, (integral baseline-corrected),
+\code{intb} (integral baseline-corrected)
 }
 \description{
 Summarize grouped chromatographic data (windowed chromatograms),

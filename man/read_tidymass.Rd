@@ -7,13 +7,16 @@
 read_tidymass(file)
 }
 \arguments{
-\item{file}{A tibble with columns scan or scan_num, mz, and intensity}
+\item{file}{Path to an mzR-compatible MS1 file}
+}
+\value{
+A tibble with columns \code{scan}, \code{rt}, \code{mz}, and \code{intensity}
 }
 \description{
 Read Tidy Mass Chromatogram from File
 }
 \examples{
-ions \%>\% tbl2exp(file = "mychrom.mzxml")
+ions <- read_tidymass(file = "mychrom.mzxml")
 
 }
 \keyword{mz}

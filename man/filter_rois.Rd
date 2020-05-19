@@ -9,13 +9,13 @@ filter_rois(chromdata, peaks, roi_width, x = "mz", cores = 1)
 \arguments{
 \item{chromdata}{A tibble of chromatography data}
 
-\item{peaks}{A tibble of peak RTs on which to center the ROIs. Should also contain an x-axis column (e.g. mz or wl.)}
+\item{peaks}{A tibble of peak RTs on which to center the ROIs. Should also contain an x-axis column (e.g. mz or wl)}
 
 \item{roi_width}{Width of ROIs to generate, in seconds}
 
 \item{x}{Name of the x-axis column, like "mz" or "wl"}
 
-\item{cores}{Number of cores to use for parallel ops on the input list. Only beneficial in huge tables (1E7s of rows.)}
+\item{cores}{Number of cores to use for parallel ops on the input list. Only beneficial in huge tables (1E7s of rows)}
 }
 \description{
 Filter Chromatogram data to Regions of Interest (ROIs)

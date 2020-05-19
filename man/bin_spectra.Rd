@@ -8,15 +8,18 @@ bin_spectra(chromdata, x = "mz", y = "intensity", scan = "scan", bin_width = 1)
 }
 \arguments{
 \item{chromdata}{Tibble with columns identifying spectrum x-coord (e.g. mz or wl), y-coord (intensity, abs, etc.),
-and scan number.}
+and scan number}
 
-\item{x}{Name of x-coordinate column.}
+\item{x}{Name of x-coordinate column}
 
-\item{y}{Name of y-coordinate column.}
+\item{y}{Name of y-coordinate column}
 
-\item{scan}{Name of scan ID column.}
+\item{scan}{Name of scan ID column}
 
-\item{bin_width}{Width of x bins.}
+\item{bin_width}{Width of x bins}
+}
+\value{
+\code{chromdata} tibble with the x-axis binned as specified
 }
 \description{
 Convenience function takes a list of m/z values and rounds them to the nearest integer

@@ -2,8 +2,7 @@
 % Please edit documentation in R/gather_listoftbl.R
 \name{gather_listoftbl}
 \alias{gather_listoftbl}
-\title{Gather List of Tibbles (or other dataframe-like type)
-Names and index of the list are saved to columns}
+\title{Gather List of Tibbles (or other dataframe-like type)}
 \usage{
 gather_listoftbl(list_in, key = "key", index = "index", cores = 1)
 }
@@ -17,8 +16,7 @@ gather_listoftbl(list_in, key = "key", index = "index", cores = 1)
 \item{cores}{Number of cores to use for parallel ops on the input list. Only beneficial in huge tables (1E7s of rows.)}
 }
 \description{
-Gather List of Tibbles (or other dataframe-like type)
-Names and index of the list are saved to columns
+Names and index of the list are saved to specified columns.
 }
 \examples{
 ions <- ions <- mzr \%>\%
