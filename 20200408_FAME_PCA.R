@@ -81,11 +81,13 @@ cor(fame_pca$x, envi_data$depth_col, use="complete.obs") %>% tibble() %>% # dept
 
 # biplot with just vectors
 fviz_pca_var(fame_pca, repel = T, col.var = "darkgrey") %>%
-  fviz_add(., 1*cor(envi_data[c("depth_col")],
+  # to log or not to log?
+  #fviz_add(., 1*cor(envi_data[c("depth_col")],
+  fviz_add(., 1*cor(log(envi_data[c("depth_col")]),
                     fame_pca$x, use="complete.obs"),
-           color ="#6278AB", geom="arrow", labelsize = 5, linetype = "solid") %>%
+           color ="#6278AB", geom="arrow", labelsize = 3, linetype = "solid") %>%
   fviz_add(., 1*cor(envi_data[c("temp_col")],
                     fame_pca$x, use="complete.obs"),
-           color ="#BE2D55", geom="arrow", labelsize = 5, linetype = "solid") +
+           color ="#BE2D55", geom="arrow", labelsize = 3, linetype = "solid") +
   theme_pubr() +
   ggtitle("fatty acid PC loadings\ndepth and temp supplementary")
