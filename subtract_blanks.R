@@ -3,6 +3,18 @@
 # Preprocessing script to read in blank chromatographic runs, average them scanwise,
 # then subtract the average from a set of experimental runs
 
+# hard threshold for denoising chromatographic data
+# full scans are kept if the base peak meets threshold
+# setting to zero disables thresholding
+threshold_bp <- 5000
+threshold <- 0
+
+# in each output file,
+# replace this pattern
+suffix_in  = "\\.cdf"
+# with this one:
+suffix_out = "_blanked_t1000.mzxml"
+
 # where are all the data?
 dir_data    <- "~/Documents/MBARI/Lipids/GCMSData/cdf/20200212/stds"
 # filter for file type
@@ -57,9 +69,12 @@ for(file_in in files_exptal){
       intensity = ifelse(intensity < 0, 0, intensity)
     ) %>%
     select(scan, rt, mz, intensity) %>%
-    filter(intensity > 0)
+    group_by(scan) %>%
+    filter(max(intensity) >= threshold_bp) %>%
+    ungroup() %>%
+    filter(intensity >= threshold)
 
   # and save
-  file_out <- str_replace(file_in, "\\.cdf", "_blanked.mzxml")
+  file_out <- str_replace(file_in, suffix_in, suffix_out)
   chromdata_exptal %>% write_tidymass(file_out)
 }
