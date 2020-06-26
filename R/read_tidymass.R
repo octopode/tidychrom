@@ -12,17 +12,20 @@
 read_tidymass <- function(file){
 
   mzr <- openMSfile(file)
+  rts <- header(mzr)$retentionTime
 
   # different routines for single, multiscan files
   # could be cleaner but it works for now
-  if(length(header(mzr)$retentionTime) > 1){
+  if(length(rts) > 1){
     ions <- mzr %>%
       spectra() %>%
-      setNames(., header(mzr)$retentionTime) %>%
-      gather_listoftbl(., key = "rt", index = "scan") %>%
-      mutate(rt = as.numeric(rt)) %>%
-      # when loading from some filetypes, mz and intensity columns are "V1", "V2"
-      set_names(c("mz", "intensity", names(.)[3:length(names(.))]))
+      mapply(., rts, FUN=function(spec, rt_val){
+        spec %>%
+          as_tibble() %>%
+          mutate(rt = as.numeric(rt_val))
+      }, SIMPLIFY = FALSE) %>%
+      do.call(rbind, .) %>%
+      dplyr::rename(mz = V1, intensity = V2)
   }else{
     # implementation of the above this way (with group_indices) might speed it up
     # would need to use a rep() call or something to replicate the header over ions
