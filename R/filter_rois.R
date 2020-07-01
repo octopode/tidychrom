@@ -37,12 +37,11 @@ filter_rois <- function(chromdata, peaks, roi_width, x = "mz", cores = 1){
           (rt > rts_peaks[i] - roi_width/2) &&
             (rt < rts_peaks[i] + roi_width/2) &&
             (mz == xs_peaks[i])
-        )
+        ) %>%
+        mutate(roi = i)
     }
   ) %>%
-    setNames(seq(nrow(peaks))) %>%
-    gather_listoftbl(index = "roi", key = "temp") %>%
-    select(-temp)
+    do.call(rbind, .)
 
   return(chromdata_rois)
 }
