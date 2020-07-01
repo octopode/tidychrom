@@ -21,7 +21,7 @@
 #'
 
 # simple version returns only y_max
-lol <- function(x, y, rsq = "0.95", min_dils = 3, force_origin = F){
+lol <- function(x, y, rsq = "0.95", min_dils = 3, force_origin = FALSE){
   coords <- cbind(x, y) %>%
     as_tibble()
   for(x_max in sort(unique(x), decreasing = T)){
