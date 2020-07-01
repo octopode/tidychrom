@@ -1,27 +1,30 @@
 #' Cluster Spectra
-#' Takes a tibble of scan data and some clustering thresholds,
-#' returns consensus spectra with cluster stats
+#' Takes a grouped tibble of scan data, clusters scans based on a cosine threshold,
+#' returns the same tibble with a cluster index.
 #'
 #' @param spectra Grouped tibble \code{mz}/\code{wl} and \code{intensity}. Should be grouped by scan.
 #' @param x Name of x-axis variable (\code{mz} or \code{wl}, etc.)
 #' @param thres_cos Min allowable cosine score for scans to cluster
 #' @param thres_pks Min allowable number of matched peaks
-#' @param thres_drt Max allowable RT difference for scans to cluster
-#' @return Input tibble but with neighbor and cos columns added
-#' @keywords cluster spectra
+#' @return Input tibble with \code{clust_id} column added
+#' @keywords cluster spectra cosine
 #' @export
 #' @examples
 #' spectra_clustered <- spectra %>%
 #'   group_by(scan, file) %>%
-#'   cluster_spectra()
+#'   cluster_spectra(thres_cos = 0.95)
 #'
 cluster_spectra <- function(
-  spectra, bin, x = "mz",
-  thres_cos = 0,
+  spectra,
+  thres_cos,
   thres_pks = 2,
-  thres_drt = Inf,
+  x = "mz",
+  bin,
   cores = 1
   ){
+
+  # save the original groupings for output
+  group_vars_in <- group_vars(spectra)
 
   # bin for comparison if requested
   if(!missing(bin)){
@@ -52,69 +55,31 @@ cluster_spectra <- function(
     group_split()
 
   # init pairwise similarity matrix
-  pairs_all <- tibble(
+  pairs <- tibble(
     x = scans %>% length() %>% seq(),
     y = x
     ) %>%
     tidyr::expand(x, y) %>%
     filter(x < y)
 
-  if(thres_drt != Inf){
-    # calc pairwise delta RTs
-    message("calculating pairwise delta RTs")
-    rts <- spectra %>%
-      distinct(rt) %>%
-      pull(rt)
-    # filter pairs by RT tolerance
-    pairs_rt <- pairs_all %>%
-      mutate(drt = abs(rts[x] - rts[y])) %>%
-      filter(drt <= thres_drt)
-  }else{
-    pairs_rt <- pairs_all
-  }
-
-  if(thres_cos != 0){
-    ## calc pairwise matched peaks
-    ## this filter is run first to optimize parallel processing
-    #message("calculating pairwise matched peaks")
-    #peaks <- pairs_rt %>%
-    #  pbapply(.,
-    #          cl = clust,
-    #          MARGIN = 1,
-    #          FUN = function(row){
-    #            inner_join(
-    #              scans[[row[[1]]]],
-    #              scans[[row[[2]]]]
-    #            ) %>%
-    #              nrow()
-    #          }
-    #  )
-    #pairs_pks <- pairs_rt %>%
-    #  mutate(pks = peaks) %>%
-    #  filter(pks >= thres_pks)
-
-    # calc pairwise cosines in parallel
-    message("calculating pairwise cosine scores")
-    #cosines <- pairs_pks %>%
-    cosines <- pairs_rt %>%
-      pbapply(.,
-              cl = clust,
-              MARGIN = 1,
-              FUN = function(row){
-                cosine_spectra(
-                  scans[[row[[1]]]],
-                  scans[[row[[2]]]],
-                  thres_pks = thres_pks
-                )
-              }
-      )
-    # filter pairs by cosine threshold
-    pairs_cos <- pairs_rt %>%
-      mutate(cos = cosines) %>%
-      filter(cos >= thres_cos)
-  }else{
-    pairs_cos <- pairs_rt
-  }
+  # calc pairwise cosines in parallel
+  message("calculating pairwise cosine scores")
+  cosines <- pairs %>%
+    pbapply(.,
+            cl = clust,
+            MARGIN = 1,
+            FUN = function(pair){
+              cosine_spectra(
+                scans[[pair[[1]]]],
+                scans[[pair[[2]]]],
+                thres_pks = thres_pks
+              )
+            }
+    )
+  # filter pairs by cosine threshold
+  pairs_cos <- pairs %>%
+    mutate(cos = cosines) %>%
+    filter(cos >= thres_cos)
 
   # use igraph to condense the spectrum pairs into clusters (disjoint sets)
   message("clustering...")
@@ -125,11 +90,12 @@ cluster_spectra <- function(
     mutate(clust_id = row_number()) %>%
     unnest(spec_id)
 
-  scans_clustered <- spectra %>%
-    summarize() %>%
+  spectra_clustered <- spectra %>%
     left_join(clusters, by = "spec_id") %>%
+    # regroup like input
+    group_by_at(group_vars_in) %>%
     # spec_id is internal; remove it
     select(-spec_id)
 
-  return(scans_clustered)
+  return(spectra_clustered)
 }
