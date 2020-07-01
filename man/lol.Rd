@@ -4,7 +4,7 @@
 \alias{lol}
 \title{Upper Limit of Linearity (LOL)}
 \usage{
-lol(x, y, rsq = "0.95", min_dils = 3, force_origin = F)
+lol(x, y, rsq = "0.95", min_dils = 3, force_origin = FALSE)
 }
 \arguments{
 \item{x}{independent variable, e.g. concentration or dilution}

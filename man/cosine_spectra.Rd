@@ -2,14 +2,16 @@
 % Please edit documentation in R/cosine_spectra.R
 \name{cosine_spectra}
 \alias{cosine_spectra}
-\title{Cosine Similarity of Two Spectra}
+\title{Pairwise cosine similarity scores}
 \usage{
-cosine_spectra(spec_1, spec_2, x = "mz")
+cosine_spectra(spec_1, spec_2, thres_pks = 2, x = "mz")
 }
 \arguments{
 \item{spec_1}{Spectrum 1 in tibble form, with x-axis named as passed}
 
 \item{spec_2}{Spectrum 2 in tibble form, with x-axis named as passed}
+
+\item{thres_pks}{Minimum number of matching peaks, else return 0}
 
 \item{x}{Name of x-coordinate column (e.g. \code{mz} or \code{wl})}
 }
@@ -18,7 +20,6 @@ cosine similarity score of the two spectra (dbl)
 }
 \description{
 Takes two spectra in tibble form, calculates their cosine similarity score.
-In other words, performs a full join on the x-axis, fills with 0s, then gets cosine.
 }
 \examples{
 cos <- cosine_spectra(ions \%>\% filter(scan == 114), ions \%>\% filter(scan == 114))

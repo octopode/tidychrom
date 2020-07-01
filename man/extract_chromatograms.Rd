@@ -4,14 +4,7 @@
 \alias{extract_chromatograms}
 \title{Extract Chromatograms}
 \usage{
-extract_chromatograms(
-  peaks,
-  chromdata,
-  x = "mz",
-  scans_gap = 3,
-  threshold = 0,
-  cores = 1
-)
+extract_chromatograms(peaks, chromdata, x = "mz", threshold = 0, cores = 1)
 }
 \arguments{
 \item{peaks}{Tibble with columns \code{scan} and \code{mz}/\code{wl}, and other identifiers}
@@ -20,9 +13,9 @@ extract_chromatograms(
 
 \item{x}{Name of x-axis variable (\code{mz} or \code{wl}, etc.)}
 
-\item{scans_gap}{Number of consecutive missing scans allowed in a peak}
-
 \item{threshold}{Hard intensity threshold for the XIC}
+
+\item{scans_gap}{Number of consecutive missing scans allowed in a peak}
 }
 \value{
 A tibble of XICs or single-wavelength chromatograms for the full peaks
