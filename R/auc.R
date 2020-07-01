@@ -24,11 +24,11 @@ auc <- function(chromdata){
       into = mean(intensity) * (rt_max - rt_min),
       intb = into - (mean(dplyr::first(intensity), dplyr::last(intensity)) * (rt_max - rt_min))
     ) %>%
-    # join back to scan metadata such as the mz/wl, cosine, peak rt and intensity, etc
+    # join back to input grouping vars
+    # these can hold metadata such as the mz/wl, cosine, peak rt and intensity, etc.
     left_join(
       chromdata %>%
-        # condense to just the max-intensity scan in each group
-        filter(intensity == max(intensity)),
+        summarize(),
       by = dplyr::group_vars(chromdata)
       )
 
