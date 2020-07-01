@@ -63,18 +63,6 @@ annot_from_db <- function(spectra, dir_db, bin, fname_regex = "*.mzXML", cores =
         select(cos) %>%
         # name the column for the file
         set_names(basename(file_load))
-        # NTS: this would be better, but I can wait to make it work
-        #summarize_at(
-        #  vars(file_load) = cosine_spectra(
-        #    # spectrum data from the present group
-        #    cbind(mz, intensity) %>%
-        #      as_tibble(),
-        #    # spectrum data loaded from file
-        #    file_load %>%
-        #      read_tidymass() %>%
-        #      bin_spectra(bin_width = bin_width_mz)
-        #  )
-        #)
     }
   ) %>%
     # bind all the columns together
