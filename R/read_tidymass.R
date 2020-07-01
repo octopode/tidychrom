@@ -25,7 +25,10 @@ read_tidymass <- function(file){
           mutate(rt = as.numeric(rt_val))
       }, SIMPLIFY = FALSE) %>%
       do.call(rbind, .) %>%
-      dplyr::rename(mz = V1, intensity = V2)
+      dplyr::rename(mz = V1, intensity = V2) %>%
+      arrange(rt) %>%
+      group_by(rt)
+    ions$scan <- group_indices(ions)
   }else{
     # implementation of the above this way (with group_indices) might speed it up
     # would need to use a rep() call or something to replicate the header over ions
