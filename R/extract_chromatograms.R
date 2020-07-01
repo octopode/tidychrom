@@ -13,38 +13,22 @@
 #' xics_matched <- peaks_matched %>%
 #' extract_chromatograms(chromdata)
 #'
-extract_chromatograms <- function(peaks, chromdata, x = "mz", scans_gap = 3, threshold = 0, cores = 1){
+extract_chromatograms <- function(peaks, chromdata, x = "mz", threshold = 0, cores = 1){
 
   ## differentiate XICs x3
-  chromdata <- chromdata %>%
+  chromdata_complete <- chromdata %>%
     ungroup() %>%
     filter(intensity >= threshold) %>%
+    # fill gaps in XICs!
+    complete(rt, mz, fill = list(intensity = 0)) %>%
     group_by(mz) %>%
-    arrange(rt)# %>%
-  #  mutate(
-  #    # first derivative (interpolated)
-  #    d1I_dt1 =   ((intensity - lag(intensity)) / (rt - lag(rt)) + (lead(intensity) - intensity) / (lead(rt) - rt))/2,
-  #    # second "
-  #    d2I_dt2 = (lead(d1I_dt1) - lag(d1I_dt1)) / (lead(rt) - lag(rt)),
-  #    # third "
-  #    d3I_dt3 = (lead(d2I_dt2) - lag(d2I_dt2)) / (lead(rt) - lag(rt))
-  #  )
-
-  ## get minimum time between scans
-  scan_time <- chromdata %>%
-    ungroup() %>%
-    select(rt) %>%
-    mutate(delta = lead(rt) - rt) %>%
-    filter(delta != 0) %>%
-    pull(delta) %>%
-    .[2:length(.)] %>%
-    min()
+    arrange(rt)
 
   x_peak <- paste(x, "peak", sep="_")
 
   # add rt_min, max columns to peak table
   peaks <- peaks %>%
-    group_by(roi) %>%
+    #group_by(roi) %>%
     # so this symbol comes unambiguously from chromdata
     select(-intensity) %>%
     rename(
@@ -66,16 +50,12 @@ extract_chromatograms <- function(peaks, chromdata, x = "mz", scans_gap = 3, thr
             (lead(intensity) > intensity) &
             (lag(intensity) >= intensity)
           ) | # or
-          # follows a gap
-          (lag(rt) <= (rt - scans_gap*scan_time)) | # or
           # is the first data point of the XIC
           (rt == dplyr::first(rt))
         ) %>%
         # last value before the peak
         pull(rt) %>%
-        max(),# %>%
-        # if there is no valid peak limit, nix the peak
-        #ifelse(. != -Inf, ., NA),
+        max(),
       rt_max = chromdata %>%
         filter(
           (mz == mz_peak) &
@@ -88,16 +68,12 @@ extract_chromatograms <- function(peaks, chromdata, x = "mz", scans_gap = 3, thr
             (lead(intensity) >= intensity) &
             (lag(intensity) > intensity)
           ) | # or
-          # precedes a gap
-          (lead(rt) >= (rt + scans_gap*scan_time)) | # or
           # is the last data point of the XIC
           (rt == dplyr::last(rt))
         ) %>%
         # first value after the peak
         pull(rt) %>%
-        min()# %>%
-        # if there is no valid peak limit, nix the peak
-        #ifelse(. != Inf, ., NA),
+        min()
     )
 
   # need to iterate over ROIs rather than filtering chromdata,
