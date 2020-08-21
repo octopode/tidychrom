@@ -4,13 +4,13 @@
 \alias{cluster_scans}
 \title{Cluster scans
 Takes a summary table of scans with \code{rt_min}/\code{rt_max} columns,
-clusters the scans based on fraction overlap,
+clusters the scans based on RT proximity,
 returns the same tibble with cluster index.}
 \usage{
 cluster_scans(scans, thres_drt)
 }
 \arguments{
-\item{scans}{Tibble with \code{rt_min}/\code{rt_max}. If there is >1 row per scan, they should be grouped}
+\item{scans}{Tibble with \code{rt_min}/\code{rt_max}. If there is >1 row per scan, they should be grouped.}
 
 \item{thres_drt}{Maximum difference in RT allowed for scans to cluster}
 }
@@ -20,7 +20,7 @@ Input tibble but with \code{clust_id} column added
 \description{
 Cluster scans
 Takes a summary table of scans with \code{rt_min}/\code{rt_max} columns,
-clusters the scans based on fraction overlap,
+clusters the scans based on RT proximity,
 returns the same tibble with cluster index.
 }
 \examples{

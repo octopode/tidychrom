@@ -22,7 +22,8 @@ auc <- function(chromdata){
       rt_min = min(rt),
       rt_max = max(rt),
       into = mean(intensity) * (rt_max - rt_min),
-      intb = into - (mean(dplyr::first(intensity), dplyr::last(intensity)) * (rt_max - rt_min))
+      intb = into - (mean(dplyr::first(intensity), dplyr::last(intensity)) * (rt_max - rt_min)),
+      intensity = max(intensity)
     ) %>%
     # join back to input grouping vars
     # these can hold metadata such as the mz/wl, cosine, peak rt and intensity, etc.

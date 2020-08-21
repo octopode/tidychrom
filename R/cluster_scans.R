@@ -1,9 +1,9 @@
 #' Cluster scans
 #' Takes a summary table of scans with \code{rt_min}/\code{rt_max} columns,
-#' clusters the scans based on fraction overlap,
+#' clusters the scans based on RT proximity,
 #' returns the same tibble with cluster index.
 #'
-#' @param scans Tibble with \code{rt_min}/\code{rt_max}. If there is >1 row per scan, they should be grouped
+#' @param scans Tibble with \code{rt_min}/\code{rt_max}. If there is >1 row per scan, they should be grouped.
 #' @param thres_drt Maximum difference in RT allowed for scans to cluster
 #' @return Input tibble but with \code{clust_id} column added
 #' @keywords cluster scans
@@ -55,12 +55,20 @@ cluster_scans <- function(
     mutate(clust_id = row_number()) %>%
     unnest(scan_id)
 
-  scans_clustered <- scans %>%
+  scans_clustered_nas <- scans %>%
     left_join(clusters, by = "scan_id") %>%
-    # regroup like input
-    group_by_at(group_vars_in) %>%
-    # scan_id is internal; remove it
-    select(-scan_id)
+    ungroup()
+
+  # give the singletons cluster IDs
+  scans_clustered <- bind_rows(
+    scans_clustered_nas %>% filter(!is.na(clust_id)),
+    scans_clustered_nas %>% filter(is.na(clust_id)) %>%
+      mutate(clust_id = row_number() + (scans_clustered_nas %>% pull(clust_id) %>% max(na.rm=TRUE)))
+  ) %>%
+  # regroup like input
+  group_by_at(group_vars_in) %>%
+  # scan_id is internal; remove it
+  select(-scan_id)
 
   return(scans_clustered)
 }

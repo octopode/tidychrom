@@ -7,19 +7,28 @@ Take chromatographic data, return summary of peaks above a hard threshold, SNR t
 Data should be input as one or more groups of \code{rt}: \code{intensity}, without gaps in RT.
 NOTE: improper grouping (e.g. by \code{rt}) will cause this function to return an empty tbl.}
 \usage{
-detect_peaks(chromdata, thres_snr = 0, thres_intensity = 0, n = Inf)
+detect_peaks(
+  chromdata,
+  thres_snr = 0,
+  thres_intensity = 0,
+  n = Inf,
+  int_min = 1,
+  target_rt
+)
 }
 \arguments{
-\item{chromdata}{chromatographic data, preferable single-ion or wavelength}
+\item{chromdata}{chromatographic data, preferable single-ion or -wavelength}
 
 \item{thres_snr}{intensity SNR threshold for peak detection}
 
 \item{thres_intensity}{Hard intensity threshold for peak detection}
 
-\item{n}{the number of most intense peaks to return}
+\item{n}{number of peaks to return}
+
+\item{int_min}{Minimum nonzero intensity, used to reasonably calculate SNR}
 }
 \value{
-RT, intensity, and mz/WL for peaks meeting criteria
+Peak rows for each group of the passed tibble, with a coords column containing the peak domain
 }
 \description{
 Detect Peaks

@@ -7,9 +7,8 @@
 #' @param thres_snr intensity SNR threshold for peak detection
 #' @param thres_intensity Hard intensity threshold for peak detection
 #' @param int_min Minimum nonzero intensity, used to reasonably calculate SNR
-#' @param target_rt If set, return n nearest peaks to target RT
 #' @param n number of peaks to return
-#' @return RT, intensity, and mz/WL for peaks meeting criteria
+#' @return Peak rows for each group of the passed tibble, with a coords column containing the peak domain
 #' @keywords detect peaks
 #' @export
 #' @examples
@@ -38,7 +37,7 @@ detect_peaks <- function(chromdata, thres_snr = 0, thres_intensity = 0, n = Inf,
     mutate(peak = FALSE) # i.e. it's a valley
 
   # calc SNR for each peak and filter using threshold
-  peaks_all <- peaks %>%
+  peaks_out <- peaks %>%
     bind_rows(valleys) %>%
     arrange(rt) %>%
     mutate(
@@ -53,29 +52,9 @@ detect_peaks <- function(chromdata, thres_snr = 0, thres_intensity = 0, n = Inf,
     ) %>%
     select(-peak) %>%
     # filter by intensity threshold
-    filter(intensity >= thres_intensity)
-
-  # if target RT given, arrange peaks by proximity to target
-  if(!missing(target_rt)){
-    # if a column name is passed
-    if(is.character(target_rt)){
-      peaks_out <- peaks_all %>%
-        rename_(rt_target = target_rt) %>%
-        mutate(drt = abs(rt - rt_target)) %>%
-        arrange(drt)
-    }else{
-      peaks_out <- peaks_all %>%
-        mutate(drt = abs(rt - target_rt)) %>%
-        arrange(drt)
-    }
-  }else{
-    # arrange by decreasing intensity
-    peaks_out <- peaks_all %>%
-      arrange(desc(intensity))
-  }
-
-  peaks_out <- peaks_out %>%
+    filter(intensity >= thres_intensity) %>%
     # get the top n
+    arrange(desc(intensity)) %>%
     slice(1:min(n, n())) %>%
     # and put them in RT order again
     arrange(rt)

@@ -2,6 +2,8 @@
 
 # using devtools and roxygen2, reload the tidychrom namespace
 reload_tidychrom <- function(){
+  library(roxygen2)
+  library(devtools)
   document()
   detach("package:tidychrom")
   library(tidychrom)
