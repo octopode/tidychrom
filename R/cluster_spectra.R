@@ -69,11 +69,15 @@ cluster_spectra <- function(
             cl = clust,
             MARGIN = 1,
             FUN = function(pair){
-              cosine_spectra(
-                scans[[pair[[1]]]],
-                scans[[pair[[2]]]],
-                thres_pks = thres_pks
-              )
+              if(any(pair)){
+                cosine_spectra(
+                  scans[[pair[[1]]]],
+                  scans[[pair[[2]]]],
+                  thres_pks = thres_pks
+                )
+              }else{
+                0
+              }
             }
     )
   # filter pairs by cosine threshold

@@ -63,7 +63,7 @@ cluster_scans <- function(
   scans_clustered <- bind_rows(
     scans_clustered_nas %>% filter(!is.na(clust_id)),
     scans_clustered_nas %>% filter(is.na(clust_id)) %>%
-      mutate(clust_id = row_number() + (scans_clustered_nas %>% pull(clust_id) %>% max(na.rm=TRUE)))
+      mutate(clust_id = (scan_id %>% as.factor() %>% as.integer()) + (scans_clustered_nas %>% pull(clust_id) %>% max(c(., 0), na.rm=TRUE)))
   ) %>%
   # regroup like input
   group_by_at(group_vars_in) %>%
