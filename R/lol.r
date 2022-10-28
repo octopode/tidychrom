@@ -6,11 +6,7 @@
 #' @param rsq minimum R^2 at which signal is considered linear
 #' @param min_dils minimum number of unique x values (dilutions) that must be present for a compound
 #' @param force_origin Force regression through the origin? Set T for pre-blanked data, otherwise F.
-#' @return a named list:
-#' \code{$y_max}: maximum \code{y} for which R^2 >= \code{rsq}
-#' \code{$n_dils}: number of dilutions used in the linreg
-#' \code{$rr}: R^2 of the linreg
-#' # NTS: can put slope and intercept in here too, if need be
+#' @return y value at upper limit of linearity
 #' @keywords upper limit linearity
 #' @export
 #' @examples

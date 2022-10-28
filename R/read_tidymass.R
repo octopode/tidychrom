@@ -14,7 +14,7 @@ read_tidymass <- function(file){
   mzr <- openMSfile(file)
   rts <- header(mzr)$retentionTime
 
-  # different routines for single, multiscan files
+  # different routine for single- than for multiscan file
   # could be cleaner but it works for now
   if(length(rts) > 1){
     ions <- mzr %>%
@@ -25,10 +25,12 @@ read_tidymass <- function(file){
           mutate(rt = as.numeric(rt_val))
       }, SIMPLIFY = FALSE) %>%
       do.call(rbind, .) %>%
-      dplyr::rename(mz = V1, intensity = V2) %>%
+      #dplyr::rename(mz = V1, intensity = V2) %>%
       arrange(rt) %>%
       group_by(rt)
     ions$scan <- group_indices(ions)
+    # set irrespective of original names
+    colnames(ions) <- c("mz", "intensity", "rt", "scan")
   }else{
     # implementation of the above this way (with group_indices) might speed it up
     # would need to use a rep() call or something to replicate the header over ions
